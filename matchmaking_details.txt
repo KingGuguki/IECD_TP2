@@ -1,0 +1,98 @@
+================================================================================
+ESPECIFICAÇÃO DE IMPLEMENTAÇÃO DO MATCHMAKING E SALAS PRIVADAS (DESAFIOS)
+Projeto IECD (Dots and Boxes / Pontos e Caixas) - ICD 25/26 (ISEL)
+================================================================================
+
+Este documento descreve a análise do sistema de emparelhamento (matchmaking) do 
+jogo base fornecido ("jogoGalo") e detalha a proposta de reestruturação do 
+servidor TCP e da interface Web (JSP) para suportar salas de espera gerais, 
+desafios privados via pesquisa AutoComplete, atribuição aleatória de símbolos 
+e a regra de prioridade de desafios.
+
+--------------------------------------------------------------------------------
+1. ANÁLISE DO JOGO BASE ("jogoGalo") E SUAS LIMITAÇÕES
+--------------------------------------------------------------------------------
+No código original dos docentes (classes "Servidor", "Skeleton" e "jogador.jsp"):
+* Acoplamento do Socket no Login: O cliente abre um socket TCP e envia a mensagem 
+  "<iniciar>" imediatamente durante o login (em "jogador.jsp"). Isto coloca o 
+  jogador na fila de jogo mesmo que ele apenas queira navegar no painel de perfil.
+* Atribuição Rígida de Símbolo: O símbolo ('X' ou 'O') é definido alternadamente
+  no momento em que o socket é registado, antes mesmo de haver um adversário 
+  definido.
+* Fila Única FIFO: Existe apenas uma fila geral ("BlockingQueue<Socket>"). Não 
+  há suporte para jogos em simultâneo no mesmo utilizador, salas privadas ou 
+  desafios diretos.
+
+--------------------------------------------------------------------------------
+2. NOVA ARQUITETURA PROPOSTA (DECOUPLING E MATCHMAKER)
+--------------------------------------------------------------------------------
+Para implementar a visão avançada mantendo a interoperabilidade com a consola 
+e cumprindo os esquemas XML/XSD definidos (sem alterar o formato das tags 
+"<iniciar>" e "<registar>"), o fluxo será reestruturado em três vertentes:
+
+A) Desacoplamento da Sessão e do Socket:
+   - O login na interface Web ("jogador.jsp") passa a ser puramente HTTP. O site
+     valida o utilizador contra o "users.xml" localmente e guarda o username na 
+     sessão HTTP, sem abrir qualquer socket TCP.
+   - A ligação TCP (Socket/Stub) só é aberta quando o jogador clica para jogar:
+     * Opção A: "Entrar na Sala de Espera" (Fila Geral)
+     * Opção B: "Desafiar Jogador" (Sala Privada via AutoComplete)
+
+B) Atribuição Dinâmica e Aleatória de Símbolo:
+   - A chamada "stub.iniciar(nickname, senha)" é enviada.
+   - O servidor TCP recebe o pedido, valida as credenciais e suspende a execução 
+     da thread do cliente no novo componente centralizador "Matchmaker.java".
+   - O cliente fica bloqueado a ler o socket ("is.readLine()") aguardando resposta.
+   - Quando o oponente é encontrado, o "Matchmaker" sorteia quem joga como 'X' 
+     e quem joga como 'O' (50% de probabilidade).
+   - O servidor envia a resposta "<iniciar>" com o nó "<jogador simbolo='...'/>"
+     especificando o símbolo sorteado a ambos os clientes em simultâneo.
+   - As threads acordam e o jogo inicia na thread "ServidorDedicado".
+
+C) Gestão de Matchmaking e a Regra de Prioridade (Matchmaker.java):
+   O "Matchmaker" manterá em memória duas estruturas protegidas por exclusão mútua:
+   1. "generalQueue": Uma fila com jogadores que procuram jogo geral (Option A).
+   2. "challengeRooms": Um mapa de desafios pendentes, indexado pelo nickname do 
+      jogador desafiado ("challengedUsername" -> "ChallengeRoom").
+
+   Quando um jogador conecta para jogar, o "Matchmaker" processa:
+   * PASSO 1: Verificação de Desafio Pendente (Prioridade Máxima)
+     Verifica se o utilizador que acabou de conectar é o desafiado numa sala do 
+     mapa "challengeRooms".
+     - Se SIM: Emparelha-o imediatamente com o desafiador que está em espera. 
+       Gera símbolos aleatoriamente (50/50), acorda a thread do desafiador, 
+       inicia o "ServidorDedicado" e retorna o símbolo.
+       *Nota:* Esta regra garante que mesmo que o desafiado tente ir pela fila 
+       geral (Option A), o desafio privado tem prioridade absoluta.
+     - Se NÃO: Segue para o Passo 2.
+
+   * PASSO 2: Verificação de Desafio Ativo
+     Se o utilizador que conectou foi quem enviou um desafio (Challenger), cria 
+     o registo da sala no "challengeRooms" e coloca a sua thread em espera 
+     bloqueante ("lock.wait()"). 
+     - A thread acorda temporariamente a cada 2 segundos para validar se o 
+       socket do desafiador ainda está ligado (evitando threads "zombie" se o 
+       utilizador fechar o browser).
+
+   * PASSO 3: Fila Geral (Option A)
+     Se for uma procura de jogo geral normal:
+     - Se a "generalQueue" contiver um jogador, retira-o, emparelha-os com 
+       símbolos aleatórios, acorda a thread desse jogador e arranca o jogo.
+     - Se estiver vazia, adiciona o utilizador atual à "generalQueue" e bloqueia 
+       a thread com espera temporizada (validando desconexão física).
+
+--------------------------------------------------------------------------------
+3. INTEGRAÇÃO COM A INTERFACE WEB (JSP/HTML/JS)
+--------------------------------------------------------------------------------
+* Notificação de Desafios em Tempo Real:
+  Como a Web e o Servidor correm no mesmo servidor aplicacional (Tomcat), a 
+  página "menu.jsp" pode consultar estaticamente o "Matchmaker" do servidor.
+  Se existir um desafio pendente para o utilizador ligado, o dashboard exibe um 
+  alerta premium: "O jogador X desafiou-te! [Aceitar Desafio]".
+* Salas de Espera e Desafios Simultâneos:
+  O utilizador pode manter e alternar entre vários jogos em curso na sessão HTTP 
+  através de um mapa "Map<String, JogosAtivos>". Cada jogo é monitorizado em 
+  background via chamadas AJAX para "obter_jogo.jsp", exibindo o tabuleiro e 
+  um relógio regressivo de 30 segundos.
+
+================================================================================

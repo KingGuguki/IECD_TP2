@@ -1,4 +1,4 @@
-﻿package util;
+package util;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.*;
@@ -70,6 +70,16 @@ import java.time.ZonedDateTime;
  * 
  */
 public class XMLDoc {
+
+	private static String contextoReal = null;
+
+	public static void setContextoReal(String path) {
+		if (path == null || path.isBlank()) {
+			contextoReal = null;
+		} else {
+			contextoReal = path;
+		}
+	}
 
 	/**
 	 * Obtém uma string representando o conteúdo de um documento DOM.
@@ -221,6 +231,15 @@ public class XMLDoc {
 	 * @return o caminho de referência para a pasta que contem documentos util
 	 */
 	public static final String getContexto() {
+		// Se existir o diretório de desenvolvimento local, usa-o diretamente para garantir a persistência
+		File pastaDev = new File("c:/Users/Faulty/Documents/ISEL/IECD/Github/IECD_TP2/TP2_1/src/main/webapp/");
+		if (pastaDev.exists() && pastaDev.isDirectory()) {
+			return "c:/Users/Faulty/Documents/ISEL/IECD/Github/IECD_TP2/TP2_1/src/main/webapp/";
+		}
+
+		if (contextoReal != null) {
+			return contextoReal;
+		}
 		String contexto = "WebContent/";
 		File f = new File(contexto);
 		if (!(f.exists() && f.isDirectory())) {

@@ -394,8 +394,8 @@ public class Stub implements AutoCloseable {
 
 		// **1. Enviar a mensagem de autenticação para o servidor:**
 		// Envia a string de acordo com o formato indicado no XSD.
-		os.println("<metodo><iniciar nickname='" + user 
-					   + "' senha='" + pass + "'/></metodo>");
+		os.println("<metodo><iniciar nickname='" + xmlAttribute(user)
+					   + "' senha='" + xmlAttribute(pass) + "'/></metodo>");
 
 		// **2. Receber a resposta do servidor e analisar o XML:**
 		// Recebe a resposta do servidor.
@@ -472,7 +472,28 @@ public class Stub implements AutoCloseable {
 	}
 
 	public void atualizarPerfil(String nick, String fotoBase64) throws Exception {
-	    os.println("<metodo><atualizar_perfil nickname='" + nick + "' foto='" + fotoBase64 + "'/></metodo>");
+	    atualizarPerfil(nick, fotoBase64, null);
+	}
+
+	public void atualizarPerfil(String nick, String fotoBase64, String cor) throws Exception {
+	    atualizarPerfil(nick, null, null, null, null, null, null, fotoBase64, cor);
+	}
+
+	public void atualizarPerfil(String nick, String firstNames, String lastNames, String email, String gender,
+	        String birthdate, String nationality, String fotoBase64, String cor) throws Exception {
+	    StringBuilder pedido = new StringBuilder();
+	    pedido.append("<metodo><atualizar_perfil nickname='").append(xmlAttribute(nick))
+	          .append("' foto='").append(xmlAttribute(fotoBase64)).append("'");
+	    appendAttribute(pedido, "cor", cor);
+	    appendAttribute(pedido, "firstnames", firstNames);
+	    appendAttribute(pedido, "lastnames", lastNames);
+	    appendAttribute(pedido, "email", email);
+	    appendAttribute(pedido, "gender", gender);
+	    appendAttribute(pedido, "birthdate", birthdate);
+	    appendAttribute(pedido, "nationality", nationality);
+	    pedido.append("/></metodo>");
+
+	    os.println(pedido.toString());
 
 	    String resposta = is.readLine();
 	    registaLog("Cliente{" + resposta + "}");
@@ -489,14 +510,27 @@ public class Stub implements AutoCloseable {
 	        throw new Exception("Resposta inválida do servidor para atualização de perfil.");
 	    }
 	}
-	
+
 	public char registar(String nick, String pass, String foto, String nac, int idade) throws Exception {
-		// 1. Enviar a mensagem de registo para o servidor (conforme o teu novo XSD)
-	    os.println("<metodo><registar nickname='" + nick 
-	               + "' senha='" + pass 
-	               + "' foto='" + foto 
-	               + "' nacionalidade='" + nac 
-	               + "' idade='" + idade + "'/></metodo>");
+	    return registar(nick, pass, "Desconhecido", "Desconhecido", nick + "@mail.pt", "X",
+	            java.time.LocalDate.now().minusYears(idade).toString(), foto, nac, "#0F172A");
+	}
+
+	public char registar(String nick, String pass, String firstNames, String lastNames, String email, String gender,
+	        String birthdate, String foto, String nac, String cor) throws Exception {
+	    StringBuilder pedido = new StringBuilder();
+	    pedido.append("<metodo><registar nickname='").append(xmlAttribute(nick))
+	          .append("' senha='").append(xmlAttribute(pass))
+	          .append("' foto='").append(xmlAttribute(foto))
+	          .append("' nacionalidade='").append(xmlAttribute(nac))
+	          .append("' firstnames='").append(xmlAttribute(firstNames))
+	          .append("' lastnames='").append(xmlAttribute(lastNames))
+	          .append("' email='").append(xmlAttribute(email))
+	          .append("' gender='").append(xmlAttribute(gender))
+	          .append("' birthdate='").append(xmlAttribute(birthdate))
+	          .append("' cor='").append(xmlAttribute(cor))
+	          .append("'/></metodo>");
+	    os.println(pedido.toString());
 
 	    // 2. Receber a resposta do servidor
 	    String resposta = is.readLine();
@@ -514,6 +548,23 @@ public class Stub implements AutoCloseable {
 	    NodeList jogadores = registo.getElementsByTagName("jogador");
 	    
 	    return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
+	}
+
+	private static void appendAttribute(StringBuilder xml, String name, String value) {
+	    if (value != null && !value.isBlank()) {
+		xml.append(" ").append(name).append("='").append(xmlAttribute(value)).append("'");
+	    }
+	}
+
+	private static String xmlAttribute(String value) {
+	    if (value == null) {
+		return "";
+	    }
+	    return value.replace("&", "&amp;")
+	            .replace("'", "&apos;")
+	            .replace("\"", "&quot;")
+	            .replace("<", "&lt;")
+	            .replace(">", "&gt;");
 	}
 	
 }

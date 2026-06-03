@@ -180,6 +180,13 @@
     </xs:complexType>
 	<xs:complexType name="atualizarPerfilType">
 		<xs:attribute name="nickname" type="xs:string" use="required"/>
-		<xs:attribute name="foto" type="xs:string" use="required"/>
+		<xs:attribute name="foto" type="xs:string" use="required"/> 
+		<xs:attribute name="cor" type="xs:string" use="optional"/>
+		<xs:attribute name="firstnames" type="xs:string" use="optional"/>
+		<xs:attribute name="lastnames" type="xs:string" use="optional"/>
+		<xs:attribute name="email" type="xs:string" use="optional"/>
+		<xs:attribute name="gender" type="xs:string" use="optional"/>
+		<xs:attribute name="birthdate" type="xs:date" use="optional"/>
+		<xs:attribute name="nationality" type="xs:string" use="optional"/>
 	</xs:complexType>
 </xs:schema>

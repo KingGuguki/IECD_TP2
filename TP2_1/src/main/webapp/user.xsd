@@ -166,6 +166,13 @@
 					</xs:appinfo>
 				</xs:annotation>
 			</xs:element>
+			<xs:element name="cor" type="colorType" minOccurs="0">
+				<xs:annotation>
+					<xs:appinfo>
+						<xs:documentation>Cor de fundo preferida do jogador</xs:documentation>
+					</xs:appinfo>
+				</xs:annotation>
+			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:simpleType name="UUIDType">
@@ -307,6 +314,19 @@
 		<xs:restriction base="xs:base64Binary">
 			<xs:minLength value="4096" />
 			<xs:maxLength value="102400" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="colorType">
+		<xs:annotation>
+			<xs:appinfo>
+				<xs:documentation>
+					Valida a cor de fundo preferida no formato hexadecimal (#RRGGBB)
+				</xs:documentation>
+			</xs:appinfo>
+		</xs:annotation>
+		<xs:restriction base="xs:token">
+			<xs:pattern value="#[0-9A-Fa-f]{6}" />
 		</xs:restriction>
 	</xs:simpleType>
 </xs:schema>

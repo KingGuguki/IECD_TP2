@@ -108,9 +108,14 @@ public class Skeleton {
             String senha = reg.getAttribute("senha");
             String foto  = reg.getAttribute("foto");
             String nac   = reg.getAttribute("nacionalidade");
-            int idade    = Integer.parseInt(reg.getAttribute("idade"));
+            String firstNames = reg.getAttribute("firstnames");
+            String lastNames = reg.getAttribute("lastnames");
+            String email = reg.getAttribute("email");
+            String gender = reg.getAttribute("gender");
+            String birthdate = reg.getAttribute("birthdate");
+            String cor = reg.getAttribute("cor");
 
-            User jg = User.register(nick, senha, foto, nac, idade);
+            User jg = User.register(nick, senha, firstNames, lastNames, email, gender, birthdate, foto, nac, cor);
             
             System.out.println("   ✅ Novo Jogador Registado: " + nick + " com o símbolo '" + simbolo + "'");
 
@@ -120,7 +125,8 @@ public class Skeleton {
             Node jogadorNode = d.getElementsByTagName("jogador").item(0);
             
             // Criamos uma nova resposta limpa com a tag <iniciar> para o metodos-cli.xsd deixar passar!
-            Document respostaDoc = XMLDoc.parseString("<metodo><iniciar nickname='" + nick + "' senha='" + senha + "'/></metodo>");
+            Document respostaDoc = XMLDoc.parseString("<metodo><iniciar nickname='" + xmlAttribute(nick)
+                    + "' senha='" + xmlAttribute(senha) + "'/></metodo>");
             
             // Importamos e anexamos o nó do jogador dentro do <iniciar>
             Node cloneElement = respostaDoc.importNode(jogadorNode, true);
@@ -139,10 +145,18 @@ public class Skeleton {
             Element req = getMethod(x, "atualizar_perfil");
             String nick = req.getAttribute("nickname");
             String novaFoto = req.getAttribute("foto");
+            String cor = optionalAttribute(req, "cor");
+            String firstNames = optionalAttribute(req, "firstnames");
+            String lastNames = optionalAttribute(req, "lastnames");
+            String email = optionalAttribute(req, "email");
+            String gender = optionalAttribute(req, "gender");
+            String birthdate = optionalAttribute(req, "birthdate");
+            String nationality = optionalAttribute(req, "nationality");
 
-            boolean sucesso = User._chgFotoBase64(nick, novaFoto);
+            boolean sucesso = User._updatePerfil(nick, firstNames, lastNames, email, gender, birthdate,
+                    nationality, novaFoto, cor);
             if (!sucesso) {
-                throw new Exception("Não foi possível atualizar a fotografia do utilizador '" + nick + "'.");
+                throw new Exception("Não foi possível atualizar o perfil do utilizador '" + nick + "'.");
             }
             User._save();
             User._load();
@@ -205,12 +219,17 @@ public class Skeleton {
         String senha = reg.getAttribute("senha");
         String foto  = reg.getAttribute("foto");
         String nac   = reg.getAttribute("nacionalidade");
-        int idade    = Integer.parseInt(reg.getAttribute("idade"));
+        String firstNames = reg.getAttribute("firstnames");
+        String lastNames = reg.getAttribute("lastnames");
+        String email = reg.getAttribute("email");
+        String gender = reg.getAttribute("gender");
+        String birthdate = reg.getAttribute("birthdate");
+        String cor = reg.getAttribute("cor");
 
         // 4. Lógica de Negócio: Criar o utilizador no users.xml
         // O método 'register' que fizemos no User.java trata de tudo e lança 
         // exceção se o nick já existir.
-        User jg = User.register(nick, senha, foto, nac, idade);
+        User jg = User.register(nick, senha, firstNames, lastNames, email, gender, birthdate, foto, nac, cor);
         
         System.out.println("   Novo Jogador Registado: " + nick + " com o símbolo '" + simbolo + "'");
 
@@ -242,19 +261,43 @@ public class Skeleton {
         // 2. Extrair os dados
         String nick = req.getAttribute("nickname");
         String novaFoto = req.getAttribute("foto");
+        String cor = optionalAttribute(req, "cor");
+        String firstNames = optionalAttribute(req, "firstnames");
+        String lastNames = optionalAttribute(req, "lastnames");
+        String email = optionalAttribute(req, "email");
+        String gender = optionalAttribute(req, "gender");
+        String birthdate = optionalAttribute(req, "birthdate");
+        String nationality = optionalAttribute(req, "nationality");
 
         // 3. Usar o método nativo do professor para atualizar o ficheiro!
         // Assumindo que o método retorna um boolean de sucesso
-        boolean sucesso = User._chgFotoBase64(nick, novaFoto);
+        boolean sucesso = User._updatePerfil(nick, firstNames, lastNames, email, gender, birthdate, nationality,
+                novaFoto, cor);
         if (sucesso) {
             User._save();
             User._load();
             // Enviar uma mensagem de sucesso de volta ao cliente
-            os.println("<metodo><resposta estado='OK'>Fotografia atualizada com sucesso!</resposta></metodo>");
+            os.println("<metodo><resposta estado='OK'>Perfil atualizado com sucesso!</resposta></metodo>");
         } else {
             // Se retornar false, provavelmente o utilizador não existe
             throw new Exception("Não foi possível atualizar a fotografia do utilizador '" + nick + "'.");
         }
+    }
+
+    private static String xmlAttribute(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("'", "&apos;")
+                .replace("\"", "&quot;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+    }
+
+    private static String optionalAttribute(Element element, String name) {
+        String value = element.getAttribute(name);
+        return value.isBlank() ? null : value;
     }
     
 	/**

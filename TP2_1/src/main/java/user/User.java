@@ -39,6 +39,8 @@ public class User {
     // Nome de ficheiro associado aos utilizadores
     private static String file = "users";
 
+    private static final String COR_PADRAO = "#0F172A";
+
     // Carrega o ficheiro com os utilizadores
     private static Document doc = null;
 
@@ -78,6 +80,9 @@ public class User {
     // Fotografia do utilizador (tipo passaporte)
     private MyImage photography = null;
 
+    // Cor de fundo preferida
+    private String corFundo = COR_PADRAO;
+
     // Nacionalidade do utilizador (ISO 3166-1 alpha-2)
     private Nationality nationality = null;
 
@@ -92,14 +97,44 @@ public class User {
      * Carrega e valida o documento util que tem os dados dos utilizadores
      */
     public static void _load() {
-	Document d = XMLDoc.parseFile(XMLDoc.getContexto() + file + ".xml");
+	String docXML = XMLDoc.getContexto() + file + ".xml";
+	String xsdPath = XMLDoc.getContexto() + file + ".xsd";
+	Document d = null;
+	boolean carregado = false;
+
 	try {
-	    XMLDoc.validDocXSD(d, XMLDoc.getContexto() + file + ".xsd");
-	} catch (SAXException e) {
-	    e.printStackTrace();
-	} catch (IOException e) {
-	    e.printStackTrace();
+	    d = XMLDoc.parseFile(docXML);
+	    if (d != null) {
+		XMLDoc.validDocXSD(d, xsdPath);
+		carregado = true;
+	    }
+	} catch (Exception e) {
+	    System.err.println("Erro ao carregar ou validar " + file + ".xml: " + e.getMessage());
 	}
+
+	if (!carregado) {
+	    System.err.println("Tentando recuperar a partir do último backup...");
+	    int maxVersao = XMLDoc.obterNumeroVersao(docXML);
+	    if (maxVersao > 0) {
+		String backupPath = XMLDoc.removerExtensao(docXML) + "(" + maxVersao + ").util";
+		java.io.File backupFile = new java.io.File(backupPath);
+		if (backupFile.exists()) {
+		    try {
+			java.nio.file.Files.copy(backupFile.toPath(), new java.io.File(docXML).toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			System.out.println("Restaurado com sucesso a partir de " + backupFile.getName());
+			
+			d = XMLDoc.parseFile(docXML);
+			if (d != null) {
+			    XMLDoc.validDocXSD(d, xsdPath);
+			    carregado = true;
+			}
+		    } catch (Exception ex) {
+			System.err.println("Erro crítico ao recuperar backup: " + ex.getMessage());
+		    }
+		}
+	    }
+	}
+
 	doc = d; // atualiza o documento na classe
     }
 
@@ -111,6 +146,7 @@ public class User {
 	this.updated = LocalDateTime.now();
 	this.blocked = true;
 	this.profile = 1;
+	this.corFundo = COR_PADRAO;
     }
 
     /**
@@ -127,6 +163,7 @@ public class User {
 	this.updated = LocalDateTime.now();
 	this.blocked = true;	// quando é criado fica bloqueado
 	this.profile = 1;
+	this.corFundo = COR_PADRAO;
 	setUsername(username);
 	setPassword(password);
 	setFirstNames(firstNames);
@@ -416,6 +453,32 @@ public class User {
 	this.photography = photo;
 	return true;
     }
+
+    /**
+     * @return cor de fundo preferida
+     */
+    public String getCorFundo() {
+	return corFundo;
+    }
+
+    /**
+     * @param corFundo cor de fundo preferida no formato hexadecimal
+     * @return sucesso
+     */
+    public boolean setCorFundo(String corFundo) {
+	if (corFundo == null || corFundo.isBlank()) {
+	    this.corFundo = COR_PADRAO;
+	    return true;
+	}
+
+	String valor = corFundo.trim().toUpperCase(Locale.ROOT);
+	if (!valor.matches("^#[0-9A-F]{6}$")) {
+	    return false;
+	}
+
+	this.corFundo = valor;
+	return true;
+    }
     
     
 
@@ -587,7 +650,7 @@ public class User {
         Element userElement = doc.createElement("user");
 
         // A ordem obrigatória do ficheiro user.xsd é:
-        // userid -> updated -> blocked -> profile -> username -> firstnames -> lastnames -> email -> gender -> birthdate -> photography -> nationality -> password
+        // userid -> updated -> blocked -> profile -> username -> firstnames -> lastnames -> email -> gender -> birthdate -> photography -> nationality -> cor -> password
         
         addChild(doc, userElement, "userid", u.getUserId().toString());
         addChild(doc, userElement, "updated", dateTimeToXsd(u.getUpdated()));
@@ -618,6 +681,9 @@ public class User {
             addChild(doc, userElement, "nationality", u.getNationality().getAbbreviation());
         }
 
+        // Cor de fundo preferida
+        addChild(doc, userElement, "cor", u.getCorFundo());
+
         // Password (Hash)
         addChild(doc, userElement, "password", u.getPassword());
 
@@ -639,6 +705,86 @@ public class User {
         _save(); 
 
         return u;
+    }
+
+    public static synchronized User register(String nick, String pass, String firstNames, String lastNames,
+	    String email, String gender, String birthdate, String foto, String nac, String corFundo) throws Exception {
+	NodeList existentes = XMLDoc.getXPath("/users/user[username/text()='" + nick + "']", doc);
+	if (existentes.getLength() > 0) {
+	    throw new Exception("O username '" + nick + "' ja esta em uso!");
+	}
+
+	User u = new User();
+	u.setBlocked(false);
+	if (!u.setUsername(nick)) {
+	    throw new Exception("Username invalido! Deve ter entre 4 e 10 caracteres.");
+	}
+	if (pass == null || pass.isBlank()) {
+	    throw new Exception("A senha e obrigatoria.");
+	}
+	u.setPassword(pass);
+	if (firstNames == null || firstNames.isBlank() || !u.setFirstNames(firstNames.trim())) {
+	    throw new Exception("Os primeiros nomes sao obrigatorios.");
+	}
+	if (lastNames == null || lastNames.isBlank() || !u.setLastNames(lastNames.trim())) {
+	    throw new Exception("Os apelidos sao obrigatorios.");
+	}
+	if (email == null || email.isBlank() || !u.setEmail(email.trim())) {
+	    throw new Exception("O email indicado nao e valido.");
+	}
+	if (!u.setGender((gender == null || gender.isBlank()) ? "X" : gender.trim().toUpperCase(Locale.ROOT))) {
+	    throw new Exception("O genero indicado nao e valido.");
+	}
+	try {
+	    if (birthdate == null || birthdate.isBlank() || !u.setBirthdate(LocalDate.parse(birthdate.trim()))) {
+		throw new Exception("A data de nascimento indicada nao e valida.");
+	    }
+	    if (u.getAge() < 3 || u.getAge() > 130) {
+		throw new Exception("A idade deve estar entre 3 e 130 anos.");
+	    }
+	} catch (Exception e) {
+	    throw new Exception(e.getMessage());
+	}
+	if (nac == null || nac.isBlank() || !u.setNationality(nac.trim().toUpperCase(Locale.ROOT))
+		|| u.getNationality() == null) {
+	    throw new Exception("A nacionalidade indicada nao e valida.");
+	}
+	if (!u.setCorFundo(corFundo)) {
+	    throw new Exception("A cor de fundo indicada nao e valida.");
+	}
+	if (foto != null && !foto.isBlank()) {
+	    MyImage imagem = new MyImage();
+	    imagem.setBase64(foto.replaceAll("[\\s]", ""));
+	    if (!imagem.isOk()) {
+		throw new Exception("A fotografia indicada nao e valida.");
+	    }
+	    u.setPhotography(imagem);
+	}
+
+	Element userElement = doc.createElement("user");
+	addChild(doc, userElement, "userid", u.getUserId().toString());
+	addChild(doc, userElement, "updated", dateTimeToXsd(u.getUpdated()));
+	addChild(doc, userElement, "blocked", "false");
+	addChild(doc, userElement, "profile", String.valueOf(u.getProfile()));
+	addChild(doc, userElement, "username", u.getUsername());
+	addChild(doc, userElement, "firstnames", u.getFirstNames());
+	addChild(doc, userElement, "lastnames", u.getLastNames());
+	addChild(doc, userElement, "email", u.getEmail());
+	addChild(doc, userElement, "gender", u.getGender());
+	addChild(doc, userElement, "birthdate", dateToXsd(u.getBirthdate()));
+	if (u.getPhotography() != null) {
+	    addChild(doc, userElement, "photography", u.getPhotography().getBase64());
+	}
+	addChild(doc, userElement, "nationality", u.getNationality().getAbbreviation());
+	addChild(doc, userElement, "cor", u.getCorFundo());
+	addChild(doc, userElement, "password", u.getPassword());
+	addChild(doc, userElement, "vitorias", "0");
+	addChild(doc, userElement, "derrotas", "0");
+	addChild(doc, userElement, "tempo", "0");
+
+	doc.getElementsByTagName("users").item(0).appendChild(userElement);
+	_save();
+	return u;
     }
 
     /**
@@ -674,6 +820,8 @@ public class User {
 	    System.out.println("Endereço de email: " + email);
 	if (gender != null)
 	    System.out.println("Género: " + gender);
+	if (corFundo != null)
+	    System.out.println("Cor de fundo: " + corFundo);
 	if (birthdate != null) {
 	    System.out.println("Data de nascimento: " + birthdate);
 	    System.out.println("Idade: " + getAge());
@@ -713,11 +861,11 @@ public class User {
 	aux.setTextContent(getUsername());
 	userElement.appendChild(aux);
 
-	aux = doc.createElement("firstNames");
+	aux = doc.createElement("firstnames");
 	aux.setTextContent(getFirstNames());
 	userElement.appendChild(aux);
 
-	aux = doc.createElement("lastNames");
+	aux = doc.createElement("lastnames");
 	aux.setTextContent(getLastNames());
 	userElement.appendChild(aux);
 
@@ -758,6 +906,10 @@ public class User {
 	    aux.setTextContent((abr == null) ? "" : abr);
 	    userElement.appendChild(aux);
 	}
+
+	aux = doc.createElement("cor");
+	aux.setTextContent((getCorFundo() == null) ? COR_PADRAO : getCorFundo());
+	userElement.appendChild(aux);
 
 	aux = doc.createElement("password");
 	aux.setTextContent(getPassword());
@@ -806,13 +958,11 @@ public class User {
 		+ "<updated>"+dateTimeToXsd(getUpdated())+"</updated>"
 		+ "<blocked>"+isBlocked()+"</blocked>"
 		+ "<profile>"+getProfile()+"</profile>"
-		+ "<username>"+getUsername()+"</username>"
-		+ "<firstnames>"+getFirstNames()+"</firstnames>"
-		+ "<lastnames>"+getLastNames()+"</lastnames>";
+		+ "<username>"+escapeXml(getUsername())+"</username>"
+		+ "<firstnames>"+escapeXml(getFirstNames())+"</firstnames>"
+		+ "<lastnames>"+escapeXml(getLastNames())+"</lastnames>";
 		if(getEmail()!=null && !getEmail().isBlank())
-		    ret+="<email>"+getEmail()+"</email>";
-		if(getGender()!=null && !getGender().isBlank())
-		    ret+="<gender>"+getGender()+"</gender>";
+		    ret+="<email>"+escapeXml(getEmail())+"</email>";
 		if(getGender()!=null && !getGender().isBlank())
 		    ret+="<gender>"+getGender()+"</gender>";
 		if(getBirthdate()!=null)
@@ -821,20 +971,31 @@ public class User {
 		    ret+="<photography>"+getPhotography().getBase64()+"</photography>";
 		ret+="<full-nationality>";
 		Nationality nat = getNationality();
-		ret +=	"<abbreviation>"+nat.getAbbreviation()+"</abbreviation>"
-			+ "<name>"+nat.getName()+"Austria</name>"
-			+ "<official>"+nat.getOfficial()+"</official>"
-			+ "<pt-name>"+nat.getPtName()+"</pt-name>"
-			+ "<pt-nationality>"+nat.getPtNationality()+"</pt-nationality>"
-			+ "<pt-male>"+nat.getPtMale()+"</pt-male>"
-			+ "<pt-female>"+nat.getPtFemale()+"</pt-female>"
+		ret +=	"<abbreviation>"+escapeXml(nat.getAbbreviation())+"</abbreviation>"
+			+ "<name>"+escapeXml(nat.getName())+"</name>"
+			+ "<official>"+escapeXml(nat.getOfficial())+"</official>"
+			+ "<pt-name>"+escapeXml(nat.getPtName())+"</pt-name>"
+			+ "<pt-nationality>"+escapeXml(nat.getPtNationality())+"</pt-nationality>"
+			+ "<pt-male>"+escapeXml(nat.getPtMale())+"</pt-male>"
+			+ "<pt-female>"+escapeXml(nat.getPtFemale())+"</pt-female>"
 			+ "<flag>"+nat.getFlag().getBase64()+"</flag>";
 		ret +=		
 			"</full-nationality>"
-			  + "<full-name>"+getName()+"</full-name>"
+			  + "<full-name>"+escapeXml(getName())+"</full-name>"
 			  + "<age>"+((getAge()==-1)?"":getAge())+"</age>"
 		+ "</jogador>";
 	return ret; //.replaceAll("[\\s]", "");
+    }
+
+    private static String escapeXml(String value) {
+	if (value == null) {
+	    return "";
+	}
+	return value.replace("&", "&amp;")
+		.replace("<", "&lt;")
+		.replace(">", "&gt;")
+		.replace("\"", "&quot;")
+		.replace("'", "&apos;");
     }
 
     /**
@@ -850,7 +1011,7 @@ public class User {
 	setBlocked(Boolean.parseBoolean(userElement.getElementsByTagName("blocked").item(0).getTextContent()));
 	setProfile(Integer.parseInt(userElement.getElementsByTagName("profile").item(0).getTextContent()));
 	setUsername(userElement.getElementsByTagName("username").item(0).getTextContent());
-	setPassword(userElement.getElementsByTagName("password").item(0).getTextContent());
+	password = userElement.getElementsByTagName("password").item(0).getTextContent();
 	setFirstNames(userElement.getElementsByTagName("firstnames").item(0).getTextContent());
 	setLastNames(userElement.getElementsByTagName("lastnames").item(0).getTextContent());
 	NodeList nl = userElement.getElementsByTagName("email");
@@ -861,6 +1022,8 @@ public class User {
 	setBirthdate((nl.getLength() == 1) ? xsdToLocalDate(nl.item(0).getTextContent()) : null);
 	nl = userElement.getElementsByTagName("nationality");
 	setNationality((nl.getLength() == 1) ? nl.item(0).getTextContent() : null);
+	nl = userElement.getElementsByTagName("cor");
+	setCorFundo((nl.getLength() == 1) ? nl.item(0).getTextContent() : null);
 	nl = userElement.getElementsByTagName("photography");
 	setPhotography((nl.getLength() == 1) ? nl.item(0).getTextContent() : null);
     }
@@ -1281,55 +1444,142 @@ public class User {
      * @throws XPathExpressionException em caso de erro
      */
     public static boolean _chgFoto(String username, String file) throws XPathExpressionException {
-	// Procura o utilizador no DOM com o nome de utilizador e senha fornecidos
-
-	NodeList us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/photography", doc);
-
-	// Verifica se foi encontrado um único utilizador com fotografia
-	if (us.getLength() != 1) {
-	    us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']", doc);
-	    if (us.getLength() != 1)
-		return false; // Utilizador não encontrado ou credenciais inválidas
-	    NodeList nat = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/nationality", doc);
-	    if (nat.getLength() == 1) // insere antes da nacionalidade se existir
-		us.item(0).insertBefore(doc.createElement("photography"), nat.item(0));
-	    else // insere no fim
-		us.item(0).appendChild(doc.createElement("photography"));
-	    us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/photography", doc);
-	}
-
 	MyImage f = new MyImage(XMLDoc.getContexto() + file);
 	if (!f.isOk())
 	    return false;
-	// Altera a senha
-	us.item(0).setTextContent(f.getBase64());
-
-	return true;
+	return _updatePerfil(username, f.getBase64(), null);
     }
 
     public static boolean _chgFotoBase64(String username, String fotoBase64) throws XPathExpressionException {
 	if (fotoBase64 == null || fotoBase64.isBlank()) {
 	    return false;
 	}
+	return _updatePerfil(username, fotoBase64, null);
+    }
 
-	NodeList us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/photography", doc);
+    public static synchronized boolean _updatePerfil(String username, String fotoBase64, String corFundo)
+	    throws XPathExpressionException {
+	return _updatePerfil(username, null, null, null, null, null, null, fotoBase64, corFundo);
+    }
 
+    public static synchronized boolean _updatePerfil(String username, String firstNames, String lastNames,
+	    String email, String gender, String birthdate, String nationality, String fotoBase64, String corFundo)
+	    throws XPathExpressionException {
+	NodeList us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']", doc);
 	if (us.getLength() != 1) {
-	    us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']", doc);
-	    if (us.getLength() != 1)
-		return false;
-	    NodeList nat = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/nationality", doc);
-	    if (nat.getLength() == 1)
-		us.item(0).insertBefore(doc.createElement("photography"), nat.item(0));
-	    else
-		us.item(0).appendChild(doc.createElement("photography"));
-	    us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']/photography", doc);
+	    return false;
 	}
 
-	MyImage f = new MyImage();
-	f.setBase64(fotoBase64.replaceAll("[\\s]", ""));
-	us.item(0).setTextContent(f.getBase64());
-	return true;
+	Element user = (Element) us.item(0);
+	boolean alterou = false;
+	String fotoNormalizada = null;
+	String corNormalizada = null;
+	LocalDate birthdateNormalizada = null;
+	String nationalityNormalizada = null;
+
+	if (firstNames != null && firstNames.isBlank()) {
+	    return false;
+	}
+	if (lastNames != null && lastNames.isBlank()) {
+	    return false;
+	}
+	if (email != null) {
+	    User validacao = new User();
+	    if (email.isBlank() || !validacao.setEmail(email.trim())) {
+		return false;
+	    }
+	}
+	if (gender != null && !gender.isBlank()
+		&& !gender.trim().toUpperCase(Locale.ROOT).matches("[MFX]")) {
+	    return false;
+	}
+	if (birthdate != null) {
+	    try {
+		birthdateNormalizada = LocalDate.parse(birthdate.trim());
+		if (birthdateNormalizada.isAfter(LocalDate.now())) {
+		    return false;
+		}
+		int idade = Period.between(birthdateNormalizada, LocalDate.now()).getYears();
+		if (idade < 3 || idade > 130) {
+		    return false;
+		}
+	    } catch (Exception e) {
+		return false;
+	    }
+	}
+	if (nationality != null) {
+	    nationalityNormalizada = nationality.trim().toUpperCase(Locale.ROOT);
+	    if (nationalityNormalizada.isBlank() || Nationality.getByAbbreviation(nationalityNormalizada) == null) {
+		return false;
+	    }
+	}
+
+	if (fotoBase64 != null && !fotoBase64.isBlank()) {
+	    MyImage foto = new MyImage();
+	    foto.setBase64(fotoBase64.replaceAll("[\\s]", ""));
+	    if (!foto.isOk()) {
+		return false;
+	    }
+	    fotoNormalizada = foto.getBase64();
+	}
+
+	if (corFundo != null && !corFundo.isBlank()) {
+	    corNormalizada = corFundo.trim().toUpperCase(Locale.ROOT);
+	    if (!corNormalizada.matches("^#[0-9A-F]{6}$")) {
+		return false;
+	    }
+	}
+
+	if (fotoNormalizada != null) {
+	    Element photography = ensureChildBeforeAny(user, "photography", "", "nationality", "cor", "password");
+	    photography.setTextContent(fotoNormalizada);
+	    alterou = true;
+	}
+
+	if (corNormalizada != null) {
+	    Element cor = ensureChildBeforeAny(user, "cor", COR_PADRAO, "password");
+	    cor.setTextContent(corNormalizada);
+	    alterou = true;
+	}
+
+	if (firstNames != null) {
+	    getDirectChild(user, "firstnames").setTextContent(firstNames.trim());
+	    alterou = true;
+	}
+	if (lastNames != null) {
+	    getDirectChild(user, "lastnames").setTextContent(lastNames.trim());
+	    alterou = true;
+	}
+	if (email != null) {
+	    getDirectChild(user, "email").setTextContent(email.trim());
+	    alterou = true;
+	}
+	if (gender != null && !gender.isBlank()) {
+	    Element genderElement = ensureChildBeforeAny(user, "gender", "X", "birthdate", "photography",
+		    "nationality", "cor", "password");
+	    genderElement.setTextContent(gender.trim().toUpperCase(Locale.ROOT));
+	    alterou = true;
+	}
+	if (birthdateNormalizada != null) {
+	    Element birthdateElement = ensureChildBeforeAny(user, "birthdate", "", "photography", "nationality",
+		    "cor", "password");
+	    birthdateElement.setTextContent(dateToXsd(birthdateNormalizada));
+	    alterou = true;
+	}
+	if (nationalityNormalizada != null) {
+	    Element nationalityElement = ensureChildBeforeAny(user, "nationality", "", "cor", "password");
+	    nationalityElement.setTextContent(nationalityNormalizada);
+	    alterou = true;
+	}
+
+	if (alterou) {
+	    Element updated = getDirectChild(user, "updated");
+	    if (updated != null) {
+		updated.setTextContent(dateTimeToXsd(LocalDateTime.now()));
+	    }
+	}
+
+	return alterou;
     }
 
     /**
@@ -1375,6 +1625,28 @@ public class User {
 	} else {
 	    parent.insertBefore(novo, ref);
 	}
+	return novo;
+    }
+
+    private static Element ensureChildBeforeAny(Element parent, String tagName, String defaultValue,
+	    String... beforeTagNames) {
+	Element existing = getDirectChild(parent, tagName);
+	if (existing != null) {
+	    return existing;
+	}
+
+	Element novo = doc.createElement(tagName);
+	novo.setTextContent(defaultValue);
+
+	for (String beforeTagName : beforeTagNames) {
+	    Element before = getDirectChild(parent, beforeTagName);
+	    if (before != null) {
+		parent.insertBefore(novo, before);
+		return novo;
+	    }
+	}
+
+	parent.appendChild(novo);
 	return novo;
     }
 
@@ -1458,31 +1730,16 @@ public class User {
      * @throws Exception em caso de erro
      */
     public static User _obtain(String username) throws Exception {
+	NodeList us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']", doc);
 
-	// Procura todos os elementos "username" no documento XML
-	NodeList us = doc.getElementsByTagName("username");
-
-	// Se encontrou o elemento com o "username"
 	if (us.getLength() == 1) {
-
-	    // Obtém o elemento pai do primeiro "username" encontrado (que é o elemento
-	    // "user")
-	    Element pai = (Element) us.item(0).getParentNode();
-
-	    // Cria um novo objeto User
+	    Element pai = (Element) us.item(0);
 	    User ret = new User();
-
-	    // Popula o objeto User com os dados do elemento "user"
 	    ret.fromElement(pai);
-
-	    // Retorna o objeto User
 	    return ret;
-
-	} else {
-
-	    // Caso contrário, lança uma exceção
-	    throw new Exception("Utilizador não encontrado: " + username);
 	}
+
+	throw new Exception("Utilizador não encontrado: " + username);
     }
 
     /**
