@@ -1,5 +1,6 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" deferredSyntaxAllowedAsLiteral="true" %>
 <%
+    // Garante que o utilizador está autenticado antes de carregar a página
     String username = (String) session.getAttribute("tp2_username");
     if (username == null) {
         response.sendRedirect("login.jsp");
@@ -146,11 +147,19 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        fetch("halloffame")
-            .then(r => r.json())
+        // Concatenamos diretamente o context path injetado pelo Java de forma segura
+        const urlFinal = "<%= request.getContextPath() %>/halloffame";
+
+        fetch(urlFinal)
+            .then(r => {
+                if (!r.ok) {
+                    throw new Error("Erro do Servidor: " + r.status);
+                }
+                return r.json();
+            })
             .then(data => {
                 if (data.error) {
-                    document.getElementById("tableContainer").innerHTML = `<p style="color:red; text-align:center;">Erro: ${data.error}</p>`;
+                    document.getElementById("tableContainer").innerHTML = "<p style='color:red; text-align:center;'>Erro: " + data.error + "</p>";
                     return;
                 }
                 
@@ -178,35 +187,35 @@
                     else if (rank === 2) { rankClass = "rank-2"; rankIcon = "🥈"; }
                     else if (rank === 3) { rankClass = "rank-3"; rankIcon = "🥉"; }
                     
+                    // Escapamos o hífen e os cifrões para o JSP antigo não estragar a concatenação
                     const avatarHtml = p.photo 
-                        ? `<img src="data:image/jpeg;base64,${p.photo}" class="avatar">` 
-                        : `<div class="avatar">${p.username.charAt(0).toUpperCase()}</div>`;
+                        ? "<img src='data:image/jpeg;base64," + p.photo + "' class='avatar'>" 
+                        : "<div class='avatar'>" + p.username.charAt(0).toUpperCase() + "</div>";
                         
-                    html += `
-                        <tr>
-                            <td class="rank ${rankClass}">${rankIcon}</td>
-                            <td>
-                                <div class="user-info">
-                                    ${avatarHtml}
-                                    <div>
-                                        <strong>${p.username}</strong><br>
-                                        <span style="font-size:0.85rem; color:var(--muted)">${p.nationality}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="stats-highlight">${p.vitorias}</td>
-                            <td class="stats-low">${p.derrotas}</td>
-                            <td class="stats-neutral">${p.empates}</td>
-                            <td>${p.tempoMedio > 0 ? p.tempoMedio.toFixed(1) + 's' : '-'}</td>
-                        </tr>
-                    `;
+                    html += "<tr>" +
+                            "<td class='rank " + rankClass + "'>" + rankIcon + "</td>" +
+                            "<td>" +
+                                "<div class='user-info'>" +
+                                    avatarHtml +
+                                    "<div>" +
+                                        "<strong>" + p.username + "</strong><br>" +
+                                        "<span style='font-size:0.85rem; color:var(--muted)'>" + (p.nationality || 'Desconhecida') + "</span>" +
+                                    "</div>" +
+                                "</div>" +
+                            "</td>" +
+                            "<td class='stats-highlight'>" + p.vitorias + "</td>" +
+                            "<td class='stats-low'>" + p.derrotas + "</td>" +
+                            "<td class='stats-neutral'>" + p.empates + "</td>" +
+                            "<td>" + (p.tempoMedio > 0 ? p.tempoMedio.toFixed(1) + 's' : '-') + "</td>" +
+                        "</tr>";
                 });
                 
-                html += `</tbody></table>`;
+                html += "</tbody></table>";
                 document.getElementById("tableContainer").innerHTML = html;
             })
             .catch(err => {
-                document.getElementById("tableContainer").innerHTML = `<p style="color:red; text-align:center;">Erro de ligação ao carregar dados.</p>`;
+                console.error(err);
+                document.getElementById("tableContainer").innerHTML = "<p style='color:red; text-align:center;'>Erro de ligação ao carregar dados.</p>";
             });
     });
 </script>

@@ -1517,4 +1517,22 @@
         <derrotas>0</derrotas>
         <tempo>0</tempo>
     </user>
+    <user>
+        <userid>135de9f5-d5fe-424f-a2fb-ff73575b9d09</userid>
+        <updated>2026-06-04T17:45:45</updated>
+        <blocked>false</blocked>
+        <profile>1</profile>
+        <username>JohnPork</username>
+        <firstnames>John</firstnames>
+        <lastnames>Pork</lastnames>
+        <email>JohnPork@gmail.com</email>
+        <gender>X</gender>
+        <birthdate>2022-06-04</birthdate>
+        <nationality>PT</nationality>
+        <cor>#0F172A</cor>
+        <password>a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3</password>
+        <vitorias>0</vitorias>
+        <derrotas>0</derrotas>
+        <tempo>0</tempo>
+    </user>
 </users>
