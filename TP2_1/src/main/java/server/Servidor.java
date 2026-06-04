@@ -88,7 +88,10 @@ public class Servidor {
                     }    
                 } catch (Exception e) {
                     System.out.println("❌ Erro na tarefa de gestão de fila.");
-                }
+                } catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
             }
         }).start();
 
