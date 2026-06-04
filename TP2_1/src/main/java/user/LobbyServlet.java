@@ -53,6 +53,11 @@ public class LobbyServlet extends HttpServlet {
                     String senha = (String) session.getAttribute("tp2_senha");
                     
                     if (nick != null && senha != null) {
+                        java.net.Socket oldSocket = (java.net.Socket) session.getAttribute("tp2_socket");
+                        if (oldSocket != null && !oldSocket.isClosed()) {
+                            try { oldSocket.close(); } catch (Exception e) {}
+                        }
+                        
                         java.net.Socket novoSocket = new java.net.Socket("localhost", 5025);
                         Stub novoStub = new Stub(novoSocket);
                         novoStub.iniciar(nick, senha); // Auto-login invisível!

@@ -53,7 +53,7 @@ class ServidorDedicado extends Thread {
         this.connectionO = connection2;
     }
 
-    private void atualizarEstatisticasFimJogo(JogoXML jogo) throws Exception {
+    private void atualizarEstatisticasFimJogo(JogoXML jogo, long duracaoSegundos) throws Exception {
         String userX = Skeleton.obterSocketUtilizador(connectionX);
         String userO = Skeleton.obterSocketUtilizador(connectionO);
 
@@ -62,13 +62,14 @@ class ServidorDedicado extends Thread {
         }
 
         if (jogo.empate()) {
+            User.registarResultadoJogo(userX, userO, null, true, duracaoSegundos);
             return;
         }
 
         if ("VX".equals(jogo.getEstado()) || jogo.vitoria('X')) {
-            User.registarResultadoJogo(userX, userO);
+            User.registarResultadoJogo(userX, userO, userX, false, duracaoSegundos);
         } else if ("VO".equals(jogo.getEstado()) || jogo.vitoria('O')) {
-            User.registarResultadoJogo(userO, userX);
+            User.registarResultadoJogo(userX, userO, userO, false, duracaoSegundos);
         }
     }
 
@@ -82,6 +83,7 @@ class ServidorDedicado extends Thread {
      * * Fechar os sockets quando o jogo termina.
      */
     public void run() {
+        long inicioJogo = System.currentTimeMillis();
 
         try (
             // Cria streams para leitura e escrita de dados nos sockets
@@ -176,7 +178,8 @@ class ServidorDedicado extends Thread {
                         }
                     }
                 } // Fim do for (;;)
-                atualizarEstatisticasFimJogo(jogo);
+                long duracaoSegundos = (System.currentTimeMillis() - inicioJogo) / 1000;
+                atualizarEstatisticasFimJogo(jogo, duracaoSegundos);
             } catch (java.net.SocketTimeoutException timeoutEx) {
                 System.out.println("Servidor dedicado: Timeout atingido por inatividade de um jogador (" + turnoAtual + ")!");
                 if (turnoAtual == 'X') {
@@ -186,7 +189,8 @@ class ServidorDedicado extends Thread {
                     jogo.setEstado("VX"); // Vitória do X porque o O adormeceu
                     Skeleton.runNotificarTimeout(osX, jogo);
                 }
-                atualizarEstatisticasFimJogo(jogo);
+                long duracaoSegundos = (System.currentTimeMillis() - inicioJogo) / 1000;
+                atualizarEstatisticasFimJogo(jogo, duracaoSegundos);
             } catch (Exception e) {
                 System.out.println("⚠️ Jogo interrompido: " + e.getMessage());
             }

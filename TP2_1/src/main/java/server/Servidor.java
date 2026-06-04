@@ -63,8 +63,21 @@ public class Servidor {
                     
                     System.out.println("🤝 Par encontrado! A iniciar Servidor Dedicado...");
                     
+                    Socket skX = null;
+                    Socket skO = null;
+                    if (Math.random() < 0.5) {
+                        skX = sk1;
+                        skO = sk2;
+                    } else {
+                        skX = sk2;
+                        skO = sk1;
+                    }
+                    
+                    Skeleton.sendEntrarFilaResponse(skX, 'X');
+                    Skeleton.sendEntrarFilaResponse(skO, 'O');
+                    
                     // 🏎️ Lança uma thread separada para gerir a lógica deste jogo específico
-                    Thread jogo = new ServidorDedicado(sk1, sk2);
+                    Thread jogo = new ServidorDedicado(skX, skO);
                     jogo.start(); 
 
                     // 🛑 Se for modo Single, espera o jogo acabar e encerra o programa
@@ -138,28 +151,37 @@ public class Servidor {
                             
                             // 🌟 INTERCEÇÃO PARA JOGADORES DE CONSOLA OU ACEITAÇÕES 🌟
                             // Se este jogador tiver um convite pendente para ele, intercetamos!
-                            if (username != null && convitesPendentes.containsKey(username)) {
+                            if (username != null) {
                                 String inviter = convitesPendentes.remove(username);
-                                Socket inviterSocket = esperaVIP.remove(inviter);
-                                
-                                if (inviterSocket != null && !inviterSocket.isClosed()) {
-                                    System.out.println("🎉 Convite aceite implicitamente/explicitamente por: " + username);
+                                if (inviter != null) {
+                                    Socket inviterSocket = esperaVIP.remove(inviter);
                                     
-                                    // Associa os símbolos e envia respostas
-                                    Skeleton.sendEntrarFilaResponse(inviterSocket, 'X');
-                                    Skeleton.sendEntrarFilaResponse(element, 'O');
-                                    
-                                    // Arranca logo com a thread dedicada!
-                                    ServidorDedicado sd = new ServidorDedicado(inviterSocket, element);
-                                    sd.start();
-                                    break; // Sai do lobby
+                                    if (inviterSocket != null && !inviterSocket.isClosed()) {
+                                        System.out.println("🎉 Convite aceite implicitamente/explicitamente por: " + username);
+                                        
+                                        Socket skX = null;
+                                        Socket skO = null;
+                                        if (Math.random() < 0.5) {
+                                            skX = inviterSocket;
+                                            skO = element;
+                                        } else {
+                                            skX = element;
+                                            skO = inviterSocket;
+                                        }
+                                        
+                                        // Associa os símbolos e envia respostas
+                                        Skeleton.sendEntrarFilaResponse(skX, 'X');
+                                        Skeleton.sendEntrarFilaResponse(skO, 'O');
+                                        
+                                        // Arranca logo com a thread dedicada!
+                                        ServidorDedicado sd = new ServidorDedicado(skX, skO);
+                                        sd.start();
+                                        break; // Sai do lobby
+                                    }
                                 }
                             }
 
-                            char atribuido = proximoSimbolo;
-                            Skeleton.sendEntrarFilaResponse(element, atribuido);
                             queue.put(element);
-                            proximoSimbolo = (atribuido == 'X' ? 'O' : 'X');
                             break; 
                         } 
                         else if (acao == 2) { // Desafiar privado (Entra na fila VIP)
@@ -169,26 +191,31 @@ public class Servidor {
                             // Lança uma thread para vigiar se este socket envia cancelar!
                             new Thread(() -> {
                                 try {
+                                    element.setSoTimeout(500); // Para poder sair do ciclo se esperaVIP remover
                                     BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(element.getInputStream()));
                                     while (esperaVIP.containsKey(username)) {
-                                        if (is.ready()) {
+                                        try {
                                             String linha = is.readLine();
                                             if (linha != null && linha.contains("cancelar_desafio")) {
                                                 System.out.println("🚫 Jogador " + username + " cancelou o convite.");
                                                 esperaVIP.remove(username);
-                                                // Remove qualquer convite que ele tenha feito
                                                 convitesPendentes.values().removeIf(val -> val.equals(username));
                                                 
                                                 java.io.PrintWriter os = new java.io.PrintWriter(element.getOutputStream(), true);
                                                 os.println("<metodo><cancelar_desafio/></metodo>");
                                                 
-                                                // Devolve ao Lobby!
                                                 add(element);
                                                 break;
+                                            } else if (linha == null) {
+                                                esperaVIP.remove(username);
+                                                convitesPendentes.values().removeIf(val -> val.equals(username));
+                                                break;
                                             }
+                                        } catch (java.net.SocketTimeoutException e) {
+                                            // timeout normal, continua o while loop se ainda estiver no mapa
                                         }
-                                        Thread.sleep(200);
                                     }
+                                    element.setSoTimeout(timeout); // restaura o timeout normal
                                 } catch (Exception e) {}
                             }).start();
 
