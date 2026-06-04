@@ -86,7 +86,7 @@ public class Servidor {
                         System.out.println("👋 Modo single-game terminado. A sair...");
                         System.exit(0);
                     }    
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     System.out.println("❌ Erro na tarefa de gestão de fila.");
                 }
             }

@@ -291,7 +291,7 @@
             modal.innerHTML = `
                 <div style="font-size:3rem; margin-bottom:16px;">⚔️</div>
                 <h2 style="margin:0 0 12px; font-size:1.5rem;">Foste Desafiado!</h2>
-                <p style="color:var(--muted); margin-bottom:24px; font-size:1.1rem;">O jogador <strong style="color:var(--accent);">@\${inviter}</strong> convidou-te para uma partida privada!</p>
+                <p style="color:var(--muted); margin-bottom:24px; font-size:1.1rem;">O jogador <strong style="color:var(--accent);">@` + inviter + `</strong> convidou-te para uma partida privada!</p>
                 <div style="display:flex; gap:12px; justify-content:center;">
                     <button id="btnRecusarConvite" style="padding:12px 24px; border-radius:10px; border:none; background:rgba(255,255,255,0.1); color:white; font-weight:600; cursor:pointer; flex:1;">Ignorar</button>
                     <button id="btnAceitarConvite" style="padding:12px 24px; border-radius:10px; border:none; background:var(--accent); color:black; font-weight:bold; cursor:pointer; flex:1; box-shadow:0 4px 15px rgba(255,255,255,0.2);">Aceitar Desafio</button>
