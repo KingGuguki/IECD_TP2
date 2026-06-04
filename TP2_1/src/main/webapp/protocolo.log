@@ -837,3 +837,25 @@ pF/evKJAwEr3R8kv+Zpsjx9Z15Mtp7obCF5btkoHXvKStrWTCKBFCDhsZnieiK/FrN7e9cKc+nc0PFpB
 2026-06-04T15:15:16.226013900 - Servidor{<metodo><verificar_convites/></metodo>}
 2026-06-04T15:15:17.623943500 - Servidor{<metodo><desafiar alvo="diogo3"/></metodo>}
 2026-06-04T15:15:19.215355900 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:30.944804400 - Servidor{<metodo><iniciar nickname='diogo' senha='123'/></metodo>}
+2026-06-04T17:09:31.478972500 - Cliente{<?xml version="1.0" encoding="UTF-8" standalone="no"?><metodo><iniciar nickname="diogo" senha="123"/></metodo>}
+2026-06-04T17:09:31.608157500 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:34.589527500 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:37.584058600 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:40.592402 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:43.597160100 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:46.597119 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:49.593409300 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:52.593520100 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:55.596128700 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:09:58.583986800 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:01.589552700 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:04.587942400 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:07.593012500 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:10.596118400 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:13.594627800 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:16.586282700 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:19.583779600 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:22.596006300 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:25.589593800 - Servidor{<metodo><verificar_convites/></metodo>}
+2026-06-04T17:10:28.588287200 - Servidor{<metodo><verificar_convites/></metodo>}
