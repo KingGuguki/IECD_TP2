@@ -1459,7 +1459,7 @@
         <cor>#680075</cor>
         <password>a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3</password>
         <vitorias>0</vitorias>
-        <derrotas>1</derrotas>
+        <derrotas>2</derrotas>
         <tempo>0</tempo>
     </user>
     <user>
@@ -1477,7 +1477,7 @@
         <nationality>PT</nationality>
         <cor>#FF0000</cor>
         <password>a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3</password>
-        <vitorias>1</vitorias>
+        <vitorias>2</vitorias>
         <derrotas>0</derrotas>
         <tempo>0</tempo>
     </user>

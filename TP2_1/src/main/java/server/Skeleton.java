@@ -320,6 +320,13 @@ public class Skeleton {
         // com o tabuleiro atualizado indicando o estado atual do jogo.
         os.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
     }
+    
+    /**
+     * Envia o estado atual do jogo (usualmente uma derrota por timeout) sem esperar pelo pedido "obter"
+     */
+    public static void runNotificarTimeout(PrintWriter os, JogoXML jogo) throws Exception {
+        os.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+    }
 	/**
 	 * Método que atende a chamada Jogar.
 	 * @param is 			entrada

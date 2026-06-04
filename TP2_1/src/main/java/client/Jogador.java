@@ -300,8 +300,7 @@ public class Jogador {
 
                 // Agora sim, chamamos o registo
                 stub.registar(nick, pass, foto, nac, idade);
-                System.out.println("Conta criada com sucesso! A entrar na fila de espera...");
-                simbolo = stub.entrarFila();
+                System.out.println("A colocar-te no Menu Principal...");
 
             } else if (opcao == 1) {
                 // --- FLUXO DE LOGIN ---
@@ -315,103 +314,87 @@ public class Jogador {
                 String senha = leSenha("Indique a sua senha: ", leitor);
 
                 // Validação imediata das credenciais.
-                // Se falhar, não deve mostrar o menu.
                 stub.iniciar(nome, senha);
-               
-                // Menu pós-autenticação.
-                for (;;) {
-                    System.out.println();
-                    System.out.println("===== MENU =====");
-                    System.out.println("1 - Entrar em Jogo");
-                    System.out.println("2 - Definições de Perfil (Alterar fotografia)");
-                    System.out.println("0 - Sair");
-                    System.out.print("Opção: ");
-
-                    int opcaoMenu = leitor.nextInt();
-                    leitor.nextLine();
-
-                    if (opcaoMenu == 1) {
-                        // Já autenticado com sucesso: segue para a fila de espera.
-                        System.out.println("A colocar-te na fila de espera global...");
-                        simbolo = stub.entrarFila();
-                        break;
-                    }
-
-                    if (opcaoMenu == 2) {
-                        System.out.print("Indique o caminho COMPLETO para a nova fotografia: ");
-                        String caminhoFoto = normalizarCaminhoFoto(leitor.nextLine());
-
-                        util.MyImage img = new util.MyImage(caminhoFoto);
-                        if (!img.isOk()) {
-                            System.out.println("Erro: Não foi possível ler a imagem.");
-                            continue;
-                        }
-
-                        try (
-                            Socket socketPerfil = new Socket(host, port);
-                            Stub stubPerfil = new Stub(socketPerfil)
-                        ) {
-                            stubPerfil.atualizarPerfil(nome, img.getBase64());
-                            System.out.println("Fotografia de perfil atualizada com sucesso.");
-                        }
-                        continue;
-                    }
-
-                    if (opcaoMenu == 0) {
-                        System.out.println("A terminar sessão sem entrar em jogo...");
-                        return;
-                    }
-
-                    System.out.println("Opção inválida.");
-                }
             } else {
                 System.out.println("Opção inválida! A fechar o jogo...");
                 return;
             }
             
-            // Daqui para a frente, o código é comum! Tanto o Registo como o Login
-            // devolveram um símbolo e puseram o jogador no jogo.
+            // --- GRANDE CICLO DE SESSÃO (MENU <-> JOGO) ---
+            for (;;) {
+                System.out.println();
+                System.out.println("===== MENU =====");
+                System.out.println("1 - Entrar em Jogo");
+                System.out.println("2 - Definições de Perfil (Alterar fotografia)");
+                System.out.println("0 - Sair");
+                System.out.print("Opção: ");
 
-            //stub.print(); // Opcional: imprimir dados do jogador
-            System.out.println("Foi-lhe atribuído o identificador de jogador: " + simbolo);
-            
-            if(simbolo == 'O') 
-            {
-                System.out.println("À espera que o oponente jogue...");
-            }
-            
-            // Loop do jogo, enquanto não for o fim do jogo (estado != "ND")
-         // Loop do jogo, enquanto não for o fim do jogo (estado != "ND")
-            for(;;) 
-            {
-                // Mostra o tabuleiro atual.
-                Element tab = stub.obter();
-                System.out.println(stub.tabuleiroPontosCaixasToTXT(tab));
-                
-                String estado = tab.getAttribute("estado");
-                if(!estado.equals("ND")) 
-                {
-                    // Mostra o estado do jogo após a jogada.
-                    System.out.println(stub.estadoToTXT(estado));
-                    // O loop só deve quebrar se o jogo terminar (VX, VO, EM)
-                    if(!estado.equals("IV") && !estado.equals("BN"))
-                    {
-                        break;
+                int opcaoMenu = leitor.nextInt();
+                leitor.nextLine();
+
+                if (opcaoMenu == 1) {
+                    System.out.println("A colocar-te na fila de espera global...");
+                    simbolo = stub.entrarFila();
+                    
+                    System.out.println("Foi-lhe atribuído o identificador de jogador: " + simbolo);
+                    if(simbolo == 'O') {
+                        System.out.println("À espera que o oponente jogue...");
                     }
+                    
+                    // Loop do jogo, enquanto não for o fim do jogo
+                    for(;;) 
+                    {
+                        // Mostra o tabuleiro atual.
+                        Element tab = stub.obter();
+                        System.out.println(stub.tabuleiroPontosCaixasToTXT(tab));
+                        
+                        String estado = tab.getAttribute("estado");
+                        if(!estado.equals("ND")) 
+                        {
+                            // Mostra o estado do jogo após a jogada.
+                            System.out.println(stub.estadoToTXT(estado));
+                            // O loop só deve quebrar se o jogo terminar (VX, VO, EM)
+                            if(!estado.equals("IV") && !estado.equals("BN"))
+                            {
+                                break;
+                            }
+                        }
+                        
+                        // Pede ao jogador para fazer uma jogada informando o ponto inicial e final.
+                        System.out.print("Joga " + simbolo + " - Introduza o ponto inicial e final (ex: 1 2): ");
+                        short jogada = readMoveFromDots(leitor, 3, 3);
+                        
+                        // Envia jogada para o servidor.
+                        stub.jogar(jogada);
+                    }
+                    System.out.println("\n--- A partida terminou! ---");
+                    System.out.println("Vais ser devolvido ao Lobby Principal.");
                 }
-                
-                // Pede ao jogador para fazer uma jogada informando o ponto inicial e final.
-                System.out.print("Joga " + simbolo + " - Introduza o ponto inicial e final (ex: 1 2): ");
-                short jogada = readMoveFromDots(leitor, 3, 3);
-                
-                // Envia jogada para o servidor.
-                stub.jogar(jogada);
+                else if (opcaoMenu == 2) {
+                    System.out.print("Indique o caminho COMPLETO para a nova fotografia: ");
+                    String caminhoFoto = normalizarCaminhoFoto(leitor.nextLine());
+
+                    util.MyImage img = new util.MyImage(caminhoFoto);
+                    if (!img.isOk()) {
+                        System.out.println("Erro: Não foi possível ler a imagem.");
+                        continue;
+                    }
+
+                    // Usa o próprio Socket autenticado para atualizar (já não cria um novo Socket cego!)
+                    stub.atualizarPerfil("", img.getBase64());
+                    System.out.println("Fotografia de perfil atualizada com sucesso.");
+                }
+                else if (opcaoMenu == 0) {
+                    System.out.println("A terminar sessão...");
+                    return;
+                } else {
+                    System.out.println("Opção inválida.");
+                }
             }
+
         } catch (Exception e) {
-            System.err.println("Jogador: " + e.getLocalizedMessage());
-            // e.printStackTrace();
-        } finally {
-            System.out.println("Jogador: terminou a execução!");
-        }
+            System.err.println("Ligação terminada ou Erro: " + e.getLocalizedMessage());
+        } 
+        System.out.println("Jogador: terminou a execução!");
     }
 }

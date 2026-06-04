@@ -19,8 +19,10 @@
     String username = (String) session.getAttribute("tp2_username");
     String simbolo = (String) session.getAttribute("tp2_simbolo");
 
-    if (username == null || simbolo == null) {
-        response.sendRedirect("jogador.jsp");
+    // Apenas validamos se o username não existe. O jogador pode estar no Menu 
+    // perfeitamente válido mesmo antes de procurar partida (e portanto sem símbolo)
+    if (username == null) {
+        response.sendRedirect("login.jsp");
         return;
     }
 
@@ -44,7 +46,7 @@
             nacionalidade = "";
         }
     } catch (Exception e) {
-        response.sendRedirect("jogador.jsp");
+        response.sendRedirect("login.jsp");
         return;
     }
 %>
@@ -188,8 +190,7 @@
             <div class="pill">Painel do jogador</div>
             <h1>Bem-vindo, <%= username %></h1>
             <div class="topline">
-                <span class="muted">Símbolo: <strong><%= simbolo %></strong></span>
-                <span class="muted"><span class="swatch"></span>Cor definida</span>
+                <span class="muted"><span class="swatch"></span>Cor definida: <%= cor %></span>
             </div>
 
             <div class="avatar">
@@ -201,7 +202,6 @@
             </div>
 
             <p>Nome completo: <%= nomeCompleto %></p>
-            <p>Cor de fundo preferida: <%= cor %></p>
             <% if (nacionalidade != null && !nacionalidade.isBlank()) { %>
                 <p>Nacionalidade: <%= nacionalidade %></p>
             <% } %>
@@ -218,7 +218,7 @@
                     <strong>Editar perfil</strong>
                     <span>Atualiza os dados pessoais, a fotografia e a cor de fundo preferida.</span>
                 </a>
-                <a class="action" href="jogador.jsp?acao=logout">
+                <a class="action" href="login.jsp?acao=logout">
                     <strong>Terminar sessão</strong>
                     <span>Fecha a ligação ao servidor e limpa a sessão.</span>
                 </a>

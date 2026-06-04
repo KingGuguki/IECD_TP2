@@ -40,12 +40,33 @@ public class LobbyServlet extends HttpServlet {
 
         try {
             if ("entrar_fila".equals(acao)) {
-                // Bloqueia a thread HTTP enquanto o Servidor TCP não encontrar match!
-                char simbolo = stub.entrarFila(); 
-                
-                // Grava o símbolo recebido na sessão
-                session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
-                out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
+                try {
+                    // Bloqueia a thread HTTP enquanto o Servidor TCP não encontrar match!
+                    char simbolo = stub.entrarFila(); 
+                    
+                    // Grava o símbolo recebido na sessão
+                    session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
+                    out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
+                } catch (Exception socketMorto) {
+                    // Se o Socket caiu (porque o jogo anterior fechou), tentamos reconectar silenciosamente!
+                    String nick = (String) session.getAttribute("tp2_username");
+                    String senha = (String) session.getAttribute("tp2_senha");
+                    
+                    if (nick != null && senha != null) {
+                        java.net.Socket novoSocket = new java.net.Socket("localhost", 5025);
+                        Stub novoStub = new Stub(novoSocket);
+                        novoStub.iniciar(nick, senha); // Auto-login invisível!
+                        
+                        session.setAttribute("tp2_socket", novoSocket);
+                        session.setAttribute("tp2_stub", novoStub);
+                        
+                        char simbolo = novoStub.entrarFila(); 
+                        session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
+                        out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
+                    } else {
+                        throw socketMorto;
+                    }
+                }
             } 
             else if ("desafiar".equals(acao)) {
                 // String target = request.getParameter("target");

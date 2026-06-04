@@ -22,10 +22,16 @@ public class Servidor {
     // 🏁 Se true, o servidor fecha após terminar o primeiro jogo
     private static boolean single = false;
 
+    // 🧱 Referência global à fila para devolver os jogadores ao Lobby após os jogos
+    private static FIFOJogador filaGlobal = null;
+
     /**
      * 🚀 Ponto de entrada do sistema.
      */
     public static void main(String[] args) {
+        // Garantir que a aplicação Servidor grava na mesma pasta do Tomcat!
+        util.XMLDoc.setContextoReal("src/main/webapp/");
+        
         int port = DEFAULT_PORT;
 
         // 📝 Processamento de argumentos da linha de comandos
@@ -37,7 +43,8 @@ public class Servidor {
         System.out.println(single ? "⚠️ Modo: Jogo Único" : "🔄 Modo: Multi-Jogo");
         
         // 📥 Criação da fila (FIFO) que gere os jogadores em espera
-        FIFOJogador fIFOJogador = new Servidor().new FIFOJogador();
+        filaGlobal = new Servidor().new FIFOJogador();
+        FIFOJogador fIFOJogador = filaGlobal;
 
         /**
          * 🏗️ TAREFA DE EMPARELHAMENTO (Matchmaking)
@@ -156,6 +163,17 @@ public class Servidor {
          */
         public Socket remove() throws InterruptedException {
             return queue.take(); // 🛑 Método estritamente bloqueante
+        }
+    }
+
+    /**
+     * ♻️ Devolve o socket do jogador ao Lobby após o fim de uma partida.
+     */
+    public static void devolverAoLobby(Socket sk) {
+        if (filaGlobal != null && sk != null) {
+            try {
+                filaGlobal.add(sk);
+            } catch (InterruptedException e) { }
         }
     }
 }

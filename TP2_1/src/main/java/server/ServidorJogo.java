@@ -63,9 +63,9 @@ class ServidorDedicado extends Thread {
             return;
         }
 
-        if (jogo.vitoria('X')) {
+        if ("VX".equals(jogo.getEstado()) || jogo.vitoria('X')) {
             User.registarResultadoJogo(userX, userO);
-        } else if (jogo.vitoria('O')) {
+        } else if ("VO".equals(jogo.getEstado()) || jogo.vitoria('O')) {
             User.registarResultadoJogo(userO, userX);
         }
     }
@@ -111,65 +111,71 @@ class ServidorDedicado extends Thread {
             char turnoAtual = 'X';
 
             // Ciclo para gerir a interação entre jogadores suportando a jogada Bónus
-         // Ciclo para gerir a interação entre jogadores suportando a jogada Bónus
-            for (;;) 
-            {
-                if (turnoAtual == 'X') 
+            // Ciclo para gerir a interação entre jogadores suportando a jogada Bónus
+            try {
+                for (;;) 
                 {
-                    Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
-                    
-                    if (!jogo.terminou()) 
+                    if (turnoAtual == 'X') 
                     {
-                        jogo = Skeleton.runJogar(isX, osX, 'X', connectionX, jogo);
+                        Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
                         
-                        // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
-                        if (jogo.getEstado().equals("ND")) 
+                        if (!jogo.terminou()) 
                         {
-                            turnoAtual = 'O';
+                            jogo = Skeleton.runJogar(isX, osX, 'X', connectionX, jogo);
+                            
+                            // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
+                            if (jogo.getEstado().equals("ND")) 
+                            {
+                                turnoAtual = 'O';
+                            }
+                        } 
+                        else 
+                        {
+                            Skeleton.runObter(isO, osO, 'O', connectionO, jogo);
+                            break;
                         }
                     } 
                     else 
                     {
                         Skeleton.runObter(isO, osO, 'O', connectionO, jogo);
-                        break;
-                    }
-                } 
-                else 
-                {
-                    Skeleton.runObter(isO, osO, 'O', connectionO, jogo);
-                    
-                    if (!jogo.terminou()) 
-                    {
-                        jogo = Skeleton.runJogar(isO, osO, 'O', connectionO, jogo);
                         
-                        // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
-                        if (jogo.getEstado().equals("ND")) 
+                        if (!jogo.terminou()) 
                         {
-                            turnoAtual = 'X';
+                            jogo = Skeleton.runJogar(isO, osO, 'O', connectionO, jogo);
+                            
+                            // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
+                            if (jogo.getEstado().equals("ND")) 
+                            {
+                                turnoAtual = 'X';
+                            }
+                        } 
+                        else 
+                        {
+                            Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
+                            break;
                         }
-                    } 
-                    else 
-                    {
-                        Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
-                        break;
                     }
                 }
+                atualizarEstatisticasFimJogo(jogo);
+            } catch (java.net.SocketTimeoutException timeoutEx) {
+                System.out.println("Servidor dedicado: Timeout atingido por inatividade de um jogador (" + turnoAtual + ")!");
+                if (turnoAtual == 'X') {
+                    jogo.setEstado("VO"); // Vitória do O porque o X adormeceu
+                    Skeleton.runNotificarTimeout(osO, jogo);
+                } else {
+                    jogo.setEstado("VX"); // Vitória do X porque o O adormeceu
+                    Skeleton.runNotificarTimeout(osX, jogo);
+                }
+                atualizarEstatisticasFimJogo(jogo);
             }
-
-            atualizarEstatisticasFimJogo(jogo);
 		} catch (Exception e) {
 			System.out.println("Servidor dedicado: terminou o jogo ("+e.getMessage()+")!");
 			// e.printStackTrace();
 		} finally {
-			Skeleton.limparSocketUtilizador(connectionX);
-			Skeleton.limparSocketUtilizador(connectionO);
-			// Garante que os sockets são fechados, mesmo em caso de exceção
-			try {
-				connectionX.close();
-				connectionO.close();
-			} catch (IOException e) {
-				// Ignora a exceção caso ocorra algum erro ao fechar
-			}
+            // Em vez de descartar as ligações e forçar logout, devolvemo-las à escuta do Lobby!
+            // Isto preserva a sessão de ambos os jogadores intacta, mantendo-os logados.
+            Servidor.devolverAoLobby(connectionX);
+            Servidor.devolverAoLobby(connectionO);
 		}
 		System.out.println("Servidor dedicado: terminou a Thread ("+ this.threadId()+") do servidor dedicado!");
 	} // fim run

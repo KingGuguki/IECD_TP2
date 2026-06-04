@@ -56,6 +56,10 @@ public class GameServlet extends HttpServlet {
                 out.print("{\"error\": \"Ação inválida\"}");
             }
         } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.contains("remotamente") || msg.contains("aborted") || msg.contains("Ligação"))) {
+                session.removeAttribute("tp2_simbolo");
+            }
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             out.print("{\"error\": \"" + e.getMessage() + "\"}");
         }
@@ -100,6 +104,10 @@ public class GameServlet extends HttpServlet {
                 out.print("{\"error\": \"Ação inválida\"}");
             }
         } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && (msg.contains("remotamente") || msg.contains("aborted") || msg.contains("Ligação"))) {
+                session.removeAttribute("tp2_simbolo");
+            }
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             // Captura erros como "Jogada inválida!"
             out.print("{\"error\": \"" + e.getMessage() + "\"}");

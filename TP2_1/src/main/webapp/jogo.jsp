@@ -180,9 +180,15 @@
             <% if (simbolo != null && !simbolo.isBlank()) { %> | Símbolo: <strong><%= simbolo %></strong> <% } %>
         </p>
         <div class="actions">
-            <a href="menu.jsp">Voltar ao painel</a>
-            <a href="jogador.jsp?acao=logout">Terminar sessão</a>
+            <a href="#" onclick="abandonarPartida(); return false;" style="background: rgba(148, 163, 184, 0.14); color: #e5e7eb; padding: 10px 16px; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-block;">Voltar ao menu</a>
         </div>
+        <script>
+            function abandonarPartida() {
+                fetch("lobby?action=sair_jogo")
+                    .then(() => window.location.href = "menu.jsp")
+                    .catch(() => window.location.href = "menu.jsp");
+            }
+        </script>
         
         <% if (simbolo != null && !simbolo.isBlank()) { %>
             <h2 style="font-size:1.4rem; margin-bottom: 4px; margin-top: 0;">Partida em curso</h2>
@@ -190,9 +196,6 @@
             <div style="text-align: center;">
                 <div class="board-container">
                     <div id="board" class="board"></div>
-                </div>
-                <div style="margin-top: 20px;">
-                    <button id="btnVoltarLobby" style="display:none; background:rgba(248,113,113,0.15); color:#fca5a5; border:1px solid rgba(248,113,113,0.3); padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; font-size:1rem; transition: background 0.2s;">Abandonar / Voltar ao Lobby</button>
                 </div>
             </div>
         <% } else { %>
@@ -219,6 +222,35 @@
             const statusEl = document.getElementById("gameStatus");
             const CELL_SIZE = 70;
             let isGameOver = false;
+            let timerInterval = null;
+            let timeLeft = 30;
+
+            function updateTimerDisplay() {
+                if (isGameOver) return;
+                statusEl.innerHTML = "A tua vez de jogar! Símbolo: <span style='color:var(--accent); font-size:1.4rem;'>" + mySymbol + "</span> <br><small style='color:var(--danger); font-weight:bold;'>Tempo restante: " + timeLeft + "s</small>";
+            }
+
+            function startTimer() {
+                clearInterval(timerInterval);
+                timeLeft = 30;
+                updateTimerDisplay();
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        isGameOver = true;
+                        statusEl.className = "status-bar status-lose";
+                        statusEl.innerHTML = "💀 Derrota por inatividade!";
+                        document.getElementById("btnVoltarLobby")?.removeAttribute("style");
+                    } else {
+                        updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                clearInterval(timerInterval);
+            }
 
             function parseXML(xmlStr) { return new DOMParser().parseFromString(xmlStr, "application/xml"); }
 
@@ -232,10 +264,16 @@
                 boardEl.style.width = ((colunasCnt - 1) * CELL_SIZE) + "px";
                 boardEl.style.height = ((linhasCnt - 1) * CELL_SIZE) + "px";
                 
-                if (estado.startsWith("V")) {
+                if (estado.startsWith("V") || estado === "EM") {
                     isGameOver = true;
-                    statusEl.className = "status-bar " + (estado.charAt(1) === mySymbol ? "status-win" : "status-lose");
-                    statusEl.innerHTML = estado.charAt(1) === mySymbol ? "🎉 Vitória!" : "💀 Derrota!";
+                    stopTimer();
+                    statusEl.className = "status-bar " + (estado === "EM" ? "status-draw" : (estado.charAt(1) === mySymbol ? "status-win" : "status-lose"));
+                    if (estado === "EM") {
+                        statusEl.innerHTML = "🤝 Empate!";
+                    } else {
+                        statusEl.innerHTML = estado.charAt(1) === mySymbol ? "🎉 Vitória!" : "💀 Derrota por tempo ou linhas fechadas!";
+                    }
+                    document.getElementById("btnVoltarLobby")?.removeAttribute("style");
                 }
 
                 let newHTML = "";
@@ -304,9 +342,8 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.status === "ok") {
-                            // A jogada foi aceite. Colocamo-nos em espera para o próximo estado.
-                            // Isto bloqueará no Servlet se o turno passar para o adversário!
-                            statusEl.innerHTML = "A aguardar jogada do adversário... (Long Polling TCP)";
+                            stopTimer();
+                            statusEl.innerHTML = "A aguardar jogada do adversário... (máx 30s)";
                             fetchEstado(); 
                         } else {
                             // Se der erro (Jogada inválida, Não é a tua vez), mostra no status
@@ -332,13 +369,14 @@
                             // Se o jogo não terminou e não fomos nós que acabámos de jogar, 
                             // a atualização do tabuleiro significa que o nosso turno CHEGOU!
                             if (!isGameOver) {
-                                statusEl.innerHTML = "A tua vez de jogar! Símbolo: <span style='color:var(--accent); font-size:1.4rem;'>" + mySymbol + "</span>";
+                                startTimer();
                             }
                         } else {
                             statusEl.innerHTML = "Erro no servidor: " + data.error;
                             if (data.error.includes("Ligação")) {
                                 isGameOver = true;
-                                document.getElementById("btnVoltarLobby").style.display = "inline-block";
+                                stopTimer();
+                                document.getElementById("btnVoltarLobby")?.removeAttribute("style");
                             }
                         }
                     })
@@ -346,7 +384,8 @@
                         console.error(e);
                         statusEl.innerHTML = "<span style='color:#f87171'>Ligação ao servidor perdida! O adversário pode ter desconectado.</span>";
                         isGameOver = true;
-                        document.getElementById("btnVoltarLobby").style.display = "inline-block";
+                        stopTimer();
+                        document.getElementById("btnVoltarLobby")?.removeAttribute("style");
                     });
             }
 

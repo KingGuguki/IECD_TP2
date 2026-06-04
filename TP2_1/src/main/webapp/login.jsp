@@ -39,21 +39,7 @@
     }
 
     private Socket ligarServidor() throws Exception {
-        try {
-            return new Socket("localhost", 5025);
-        } catch (java.net.ConnectException e) {
-            Thread servidorLocal = new Thread(() -> {
-                try {
-                    server.Servidor.main(new String[0]);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            });
-            servidorLocal.setDaemon(true);
-            servidorLocal.start();
-            Thread.sleep(800);
-            return new Socket("localhost", 5025);
-        }
+        return new Socket("localhost", 5025);
     }
 %>
 <%
@@ -98,6 +84,7 @@
                 session.setAttribute("tp2_stub", stub);
                 session.setAttribute("tp2_simbolo", ""); // Começa vazio até entrar na fila
                 session.setAttribute("tp2_username", nickname.trim());
+                session.setAttribute("tp2_senha", senha);
                 response.sendRedirect("menu.jsp");
                 return;
             } catch (Exception primeiroErro) {
@@ -108,48 +95,15 @@
                     falhaLigacao = texto.contains("refused") || texto.contains("connect");
                 }
 
-                if (!falhaLigacao) {
-                    fecharSilenciosamente(stub, socket);
-                    session.removeAttribute("tp2_socket");
-                    session.removeAttribute("tp2_stub");
-                    session.removeAttribute("tp2_simbolo");
-                    session.removeAttribute("tp2_username");
-                    erro = primeiroErro.getLocalizedMessage();
+                fecharSilenciosamente(stub, socket);
+                session.removeAttribute("tp2_socket");
+                session.removeAttribute("tp2_stub");
+                session.removeAttribute("tp2_simbolo");
+                session.removeAttribute("tp2_username");
+                if (falhaLigacao) {
+                    erro = "O Motor de Jogo TCP encontra-se desligado ou inacessível. Verifica se o Tomcat arrancou corretamente.";
                 } else {
-                    try {
-                        Thread servidorLocal = new Thread(() -> {
-                            try {
-                                server.Servidor.main(new String[0]);
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
-                            }
-                        });
-                        servidorLocal.setDaemon(true);
-                        servidorLocal.start();
-
-                        Thread.sleep(800);
-
-                        socket = new Socket("localhost", 5025);
-                        stub = new Stub(socket);
-                        boolean success = stub.iniciar(nickname.trim(), senha);
-
-                        session.setAttribute("tp2_socket", socket);
-                        session.setAttribute("tp2_stub", stub);
-                        session.setAttribute("tp2_simbolo", ""); // Começa vazio
-                        session.setAttribute("tp2_username", nickname.trim());
-                        response.sendRedirect("menu.jsp");
-                        return;
-                    } catch (Exception segundoErro) {
-                        fecharSilenciosamente(stub, socket);
-                        session.removeAttribute("tp2_socket");
-                        session.removeAttribute("tp2_stub");
-                        session.removeAttribute("tp2_simbolo");
-                        session.removeAttribute("tp2_username");
-                        erro = segundoErro.getLocalizedMessage();
-                        if (erro == null || erro.isBlank()) {
-                            erro = primeiroErro.getLocalizedMessage();
-                        }
-                    }
+                    erro = primeiroErro.getLocalizedMessage();
                 }
             }
         }
@@ -177,6 +131,7 @@
             session.setAttribute("tp2_stub", stub);
             session.setAttribute("tp2_simbolo", ""); // Começa vazio
             session.setAttribute("tp2_username", regNickname.trim());
+            session.setAttribute("tp2_senha", regSenha);
             response.sendRedirect("menu.jsp");
             return;
         } catch (Exception e) {

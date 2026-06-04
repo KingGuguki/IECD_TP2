@@ -3,6 +3,6 @@
     if (session.getAttribute("tp2_username") != null) {
         response.sendRedirect("menu.jsp");
     } else {
-        response.sendRedirect("jogador.jsp");
+        response.sendRedirect("login.jsp");
     }
 %>
