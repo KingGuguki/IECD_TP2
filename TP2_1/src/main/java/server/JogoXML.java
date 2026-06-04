@@ -26,14 +26,14 @@ public class JogoXML extends Jogo
         {
             for (int j = 0; j < pontosColunas - 1; j++) 
             {
-                tab += "<linha tipo='H' linha='" + i + "' coluna='" + j + "' ocupada='" + linhasHorizontais[i][j] + "'/>";
+                tab += "<linha tipo='H' linha='" + i + "' coluna='" + j + "' ocupada='" + (linhasHorizontais[i][j] != ' ') + "' dono='" + linhasHorizontais[i][j] + "'/>";
             }
         }
         for (int i = 0; i < pontosLinhas - 1; i++) 
         {
             for (int j = 0; j < pontosColunas; j++) 
             {
-                tab += "<linha tipo='V' linha='" + i + "' coluna='" + j + "' ocupada='" + linhasVerticais[i][j] + "'/>";
+                tab += "<linha tipo='V' linha='" + i + "' coluna='" + j + "' ocupada='" + (linhasVerticais[i][j] != ' ') + "' dono='" + linhasVerticais[i][j] + "'/>";
             }
         }
         for (int i = 0; i < pontosLinhas - 1; i++) 

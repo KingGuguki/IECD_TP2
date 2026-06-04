@@ -115,27 +115,36 @@ public class Servidor {
          * 📥 Adiciona um jogador à fila e envia-lhe o seu símbolo.
          */
         public synchronized void add(Socket element) throws InterruptedException {
-            // 🚀 Lança uma tarefa curta para não bloquear o ciclo principal do servidor
+            // Lança uma tarefa para o Lobby do jogador
             new Thread(() -> {
                 try {
-                    char atribuido = proximoSimbolo;
-                    
-                    // 📞 Comunica ao cliente (via Skeleton) qual será o seu símbolo
-                    boolean entrarEmJogo = Skeleton.runEntrada(element, atribuido);
-
-                    if (entrarEmJogo) {
-                        // 📥 Coloca o socket na fila de espera para emparelhamento
-                        queue.put(element);
-
-                        // Alterna símbolo apenas quando o cliente efetivamente vai para jogo
-                        proximoSimbolo = (atribuido == 'X' ? 'O' : 'X');
-                    } else {
-                        // Operações administrativas (ex: perfil) encerram aqui a ligação
-                        element.close();
+                    while (true) {
+                        int acao = Skeleton.runLobby(element);
+                        
+                        if (acao == 1) { // Entrar na fila pública
+                            char atribuido = proximoSimbolo;
+                            
+                            // 📞 Comunica ao cliente que entrou e envia o seu símbolo
+                            Skeleton.sendEntrarFilaResponse(element, atribuido);
+                            
+                            // 📥 Coloca o socket na fila de espera para emparelhamento
+                            queue.put(element);
+                            proximoSimbolo = (atribuido == 'X' ? 'O' : 'X');
+                            break; // Sai do lobby e fica entregue ao Matchmaker
+                        } 
+                        else if (acao == 2) { // Desafiar privado
+                            // TODO: Implementar lógica de sala privada
+                            char atribuido = proximoSimbolo;
+                            Skeleton.sendEntrarFilaResponse(element, atribuido);
+                            queue.put(element);
+                            proximoSimbolo = (atribuido == 'X' ? 'O' : 'X');
+                            break; 
+                        }
+                        // Se acao == 0 (login/registar/perfil), o loop continua a ler!
                     }
-                    
                 } catch (Exception e) {
-                    System.out.println("⚠️ Falha na inicialização do jogador: " + e.getMessage());
+                    System.out.println("⚠️ Jogador saiu do lobby: " + e.getMessage());
+                    Skeleton.limparSocketUtilizador(element);
                     try { element.close(); } catch (IOException e1) {}
                 }
             }).start();

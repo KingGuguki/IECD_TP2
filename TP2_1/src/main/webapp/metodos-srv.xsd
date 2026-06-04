@@ -38,6 +38,8 @@
 				</xs:annotation>
 			</xs:element>
 			<xs:element type="atualizarPerfilType" name="atualizar_perfil"/>
+			<xs:element type="entrarFilaType" name="entrar_fila"/>
+			<xs:element type="desafiarType" name="desafiar"/>
 		</xs:choice>
 	</xs:complexType>
 	<xs:complexType name="iniciarType">
@@ -139,5 +141,9 @@
 		<xs:attribute name="gender" type="xs:string" use="optional"/>
 		<xs:attribute name="birthdate" type="xs:date" use="optional"/>
 		<xs:attribute name="nationality" type="xs:string" use="optional"/>
+	</xs:complexType>
+	<xs:complexType name="entrarFilaType"/>
+	<xs:complexType name="desafiarType">
+		<xs:attribute name="alvo" type="xs:string" use="required"/>
 	</xs:complexType>
 </xs:schema>

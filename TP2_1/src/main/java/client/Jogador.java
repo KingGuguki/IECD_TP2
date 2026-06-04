@@ -299,8 +299,9 @@ public class Jogador {
                 String foto = img.getBase64(); // A string gigante é gerada aqui de forma segura!
 
                 // Agora sim, chamamos o registo
-                simbolo = stub.registar(nick, pass, foto, nac, idade);
+                stub.registar(nick, pass, foto, nac, idade);
                 System.out.println("Conta criada com sucesso! A entrar na fila de espera...");
+                simbolo = stub.entrarFila();
 
             } else if (opcao == 1) {
                 // --- FLUXO DE LOGIN ---
@@ -315,7 +316,7 @@ public class Jogador {
 
                 // Validação imediata das credenciais.
                 // Se falhar, não deve mostrar o menu.
-                simbolo = stub.iniciar(nome, senha);
+                stub.iniciar(nome, senha);
                
                 // Menu pós-autenticação.
                 for (;;) {
@@ -330,7 +331,9 @@ public class Jogador {
                     leitor.nextLine();
 
                     if (opcaoMenu == 1) {
-                        // Já autenticado com sucesso: segue para o jogo.
+                        // Já autenticado com sucesso: segue para a fila de espera.
+                        System.out.println("A colocar-te na fila de espera global...");
+                        simbolo = stub.entrarFila();
                         break;
                     }
 

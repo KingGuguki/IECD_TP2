@@ -37,13 +37,15 @@
 					<xs:documentation>Método para atualizar a fotografia de perfil.</xs:documentation>
 				</xs:annotation>
 			</xs:element>
+			<xs:element type="entrarFilaType" name="entrar_fila"/>
+			<xs:element type="desafiarType" name="desafiar"/>
 		</xs:choice>
 	</xs:complexType>
 
 	<xs:complexType name="iniciarType">
 		<xs:sequence>
 			<xs:element type="jogadorType" name="jogador"
-				minOccurs="1">
+				minOccurs="0">
 				<xs:annotation>
 					<xs:documentation>Símbolo associado ao jogador atual.
 					</xs:documentation>
@@ -164,6 +166,7 @@
                     <xs:attribute name="linha" type="xs:integer" />
                     <xs:attribute name="coluna" type="xs:integer" />
                     <xs:attribute name="ocupada" type="xs:string" />
+                    <xs:attribute name="dono" type="xs:string" />
                 </xs:complexType>
             </xs:element>
             <xs:element name="caixa" maxOccurs="unbounded" minOccurs="0">
@@ -188,5 +191,15 @@
 		<xs:attribute name="gender" type="xs:string" use="optional"/>
 		<xs:attribute name="birthdate" type="xs:date" use="optional"/>
 		<xs:attribute name="nationality" type="xs:string" use="optional"/>
+	</xs:complexType>
+	<xs:complexType name="entrarFilaType">
+		<xs:sequence>
+			<xs:element type="jogadorType" name="jogador" minOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="desafiarType">
+		<xs:sequence>
+			<xs:element type="jogadorType" name="jogador" minOccurs="1"/>
+		</xs:sequence>
 	</xs:complexType>
 </xs:schema>

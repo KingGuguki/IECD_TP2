@@ -10,8 +10,8 @@ public class Jogo {
 
 	protected final int pontosLinhas;
 	protected final int pontosColunas;
-	protected final boolean[][] linhasHorizontais;
-	protected final boolean[][] linhasVerticais;
+	protected final char[][] linhasHorizontais;
+	protected final char[][] linhasVerticais;
 	protected final char[][] caixas;
 
 	protected final int totalLinhas;
@@ -43,9 +43,20 @@ public class Jogo {
 
 		this.pontosLinhas = pontosLinhas;
 		this.pontosColunas = pontosColunas;
-		this.linhasHorizontais = new boolean[pontosLinhas][pontosColunas - 1];
-		this.linhasVerticais = new boolean[pontosLinhas - 1][pontosColunas];
+		this.linhasHorizontais = new char[pontosLinhas][pontosColunas - 1];
+		this.linhasVerticais = new char[pontosLinhas - 1][pontosColunas];
 		this.caixas = new char[pontosLinhas - 1][pontosColunas - 1];
+
+		for (int i = 0; i < pontosLinhas; i++) {
+			for (int j = 0; j < pontosColunas - 1; j++) {
+				linhasHorizontais[i][j] = ' ';
+			}
+		}
+		for (int i = 0; i < pontosLinhas - 1; i++) {
+			for (int j = 0; j < pontosColunas; j++) {
+				linhasVerticais[i][j] = ' ';
+			}
+		}
 
 		for (int i = 0; i < pontosLinhas - 1; i++) {
 			for (int j = 0; j < pontosColunas - 1; j++) {
@@ -203,20 +214,20 @@ public class Jogo {
 
 		if (horizontal) 
 		{
-			if (linhasHorizontais[linha][coluna]) 
+			if (linhasHorizontais[linha][coluna] != ' ') 
 			{
 				return false;
 			}
-			linhasHorizontais[linha][coluna] = true;
+			linhasHorizontais[linha][coluna] = simbolo;
 			caixasFechadas = fecharCaixasPorLinhaHorizontal(linha, coluna, simbolo);
 		} 
 		else 
 		{
-			if (linhasVerticais[linha][coluna]) 
+			if (linhasVerticais[linha][coluna] != ' ') 
 			{
 				return false;
 			}
-			linhasVerticais[linha][coluna] = true;
+			linhasVerticais[linha][coluna] = simbolo;
 			caixasFechadas = fecharCaixasPorLinhaVertical(linha, coluna, simbolo);
 		}
 
@@ -262,10 +273,10 @@ public class Jogo {
 			return 0;
 		}
 
-		boolean topo = linhasHorizontais[linha][coluna];
-		boolean fundo = linhasHorizontais[linha + 1][coluna];
-		boolean esquerda = linhasVerticais[linha][coluna];
-		boolean direita = linhasVerticais[linha][coluna + 1];
+		boolean topo = (linhasHorizontais[linha][coluna] != ' ');
+		boolean fundo = (linhasHorizontais[linha + 1][coluna] != ' ');
+		boolean esquerda = (linhasVerticais[linha][coluna] != ' ');
+		boolean direita = (linhasVerticais[linha][coluna + 1] != ' ');
 
 		if (topo && fundo && esquerda && direita) {
 			caixas[linha][coluna] = simbolo;

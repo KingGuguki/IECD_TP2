@@ -19,16 +19,16 @@
         }
     }
 
-    private char registarPerfil(Stub stub, String nickname, String senha, String firstNames, String lastNames,
+    private boolean registarPerfil(Stub stub, String nickname, String senha, String firstNames, String lastNames,
             String email, String gender, String birthdate, String foto, String nationality, String cor)
             throws Exception {
         try {
-            Object simbolo = stub.getClass()
+            Object success = stub.getClass()
                 .getMethod("registar", String.class, String.class, String.class, String.class, String.class,
                         String.class, String.class, String.class, String.class, String.class)
                 .invoke(stub, nickname, senha, firstNames, lastNames, email, gender, birthdate, foto, nationality,
                         cor);
-            return ((Character) simbolo).charValue();
+            return ((Boolean) success).booleanValue();
         } catch (java.lang.reflect.InvocationTargetException e) {
             Throwable causa = e.getCause();
             if (causa instanceof Exception) {
@@ -92,11 +92,11 @@
             try {
                 socket = ligarServidor();
                 stub = new Stub(socket);
-                char s = stub.iniciar(nickname.trim(), senha);
+                boolean success = stub.iniciar(nickname.trim(), senha);
 
                 session.setAttribute("tp2_socket", socket);
                 session.setAttribute("tp2_stub", stub);
-                session.setAttribute("tp2_simbolo", String.valueOf(s));
+                session.setAttribute("tp2_simbolo", ""); // Começa vazio até entrar na fila
                 session.setAttribute("tp2_username", nickname.trim());
                 response.sendRedirect("menu.jsp");
                 return;
@@ -131,11 +131,11 @@
 
                         socket = new Socket("localhost", 5025);
                         stub = new Stub(socket);
-                        char s = stub.iniciar(nickname.trim(), senha);
+                        boolean success = stub.iniciar(nickname.trim(), senha);
 
                         session.setAttribute("tp2_socket", socket);
                         session.setAttribute("tp2_stub", stub);
-                        session.setAttribute("tp2_simbolo", String.valueOf(s));
+                        session.setAttribute("tp2_simbolo", ""); // Começa vazio
                         session.setAttribute("tp2_username", nickname.trim());
                         response.sendRedirect("menu.jsp");
                         return;
@@ -170,12 +170,12 @@
         try {
             socket = ligarServidor();
             stub = new Stub(socket);
-            char s = registarPerfil(stub, regNickname, regSenha, regFirstNames, regLastNames, regEmail, regGender,
+            boolean success = registarPerfil(stub, regNickname, regSenha, regFirstNames, regLastNames, regEmail, regGender,
                     regBirthdate, regFoto, regNationality, regCor);
 
             session.setAttribute("tp2_socket", socket);
             session.setAttribute("tp2_stub", stub);
-            session.setAttribute("tp2_simbolo", String.valueOf(s));
+            session.setAttribute("tp2_simbolo", ""); // Começa vazio
             session.setAttribute("tp2_username", regNickname.trim());
             response.sendRedirect("menu.jsp");
             return;
@@ -185,7 +185,7 @@
         }
     }
 
-    boolean ligado = usernameSessao != null && simbolo != null && !simbolo.isBlank();
+    boolean ligado = usernameSessao != null && !usernameSessao.isBlank();
 %>
 <!DOCTYPE html>
 <html lang="pt">
@@ -359,7 +359,11 @@
             <% if (ligado) { %>
                 <div style="margin-top:18px; padding:14px; border-radius:14px; background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.22);">
                     <p style="margin:0 0 6px;">Sessão ativa para <span class="mono"><%= usernameSessao %></span>.</p>
-                    <p style="margin:0;">Símbolo atribuído: <span class="mono"><%= simbolo %></span></p>
+                    <% if (simbolo != null && !simbolo.isEmpty()) { %>
+                        <p style="margin:0;">Símbolo atribuído: <span class="mono"><%= simbolo %></span></p>
+                    <% } else { %>
+                        <p style="margin:0;">Estás no menu principal. Entra numa partida para obteres o teu símbolo!</p>
+                    <% } %>
                 </div>
                 <div class="actions">
                     <a class="btnlink primary" href="menu.jsp">Continuar</a>

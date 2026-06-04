@@ -390,7 +390,7 @@ public class Stub implements AutoCloseable {
 	 * @throws Exception   Se ocorrer um erro durante a autenticação.
 	 * @throws IOException Se ocorrer um erro de comunicação com o servidor.
 	 */
-	public char iniciar(final String user, final String pass) throws IOException, Exception {
+	public boolean iniciar(final String user, final String pass) throws IOException, Exception {
 
 		// **1. Enviar a mensagem de autenticação para o servidor:**
 		// Envia a string de acordo com o formato indicado no XSD.
@@ -407,13 +407,20 @@ public class Stub implements AutoCloseable {
 		registo = XMLDoc.parseString(resposta);
 		validXSD(registo);
 		
-		// **3. Obter o elemento "jogador" da resposta:**
-		// Obtém a lista de elementos "jogador".
-		NodeList jogadores = registo.getElementsByTagName("jogador");
-	
-		// **4. Vai retornar o símbolo do jogador:**
-		// Obtem o conteúdo do atributo 'símbolo' do elemento "jogador".
-		// Retorna o símbolo do jogador.
+		return true;
+	}
+
+	public char entrarFila() throws IOException, Exception {
+		os.println("<metodo><entrar_fila/></metodo>");
+		String resposta = is.readLine();
+		registaLog("Cliente{"+resposta+"}");
+		if(resposta==null)
+			throw new Exception("Ligação ao servidor cancelada remotamente!");
+		
+		Document d = XMLDoc.parseString(resposta);
+		validXSD(d);
+		
+		NodeList jogadores = d.getElementsByTagName("jogador");
 		return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
 	}
 
@@ -511,12 +518,12 @@ public class Stub implements AutoCloseable {
 	    }
 	}
 
-	public char registar(String nick, String pass, String foto, String nac, int idade) throws Exception {
+	public boolean registar(String nick, String pass, String foto, String nac, int idade) throws Exception {
 	    return registar(nick, pass, "Desconhecido", "Desconhecido", nick + "@mail.pt", "X",
 	            java.time.LocalDate.now().minusYears(idade).toString(), foto, nac, "#0F172A");
 	}
 
-	public char registar(String nick, String pass, String firstNames, String lastNames, String email, String gender,
+	public boolean registar(String nick, String pass, String firstNames, String lastNames, String email, String gender,
 	        String birthdate, String foto, String nac, String cor) throws Exception {
 	    StringBuilder pedido = new StringBuilder();
 	    pedido.append("<metodo><registar nickname='").append(xmlAttribute(nick))
@@ -543,11 +550,7 @@ public class Stub implements AutoCloseable {
 	    registo = XMLDoc.parseString(resposta);
 	    validXSD(registo); // Valida contra o metodos-cli.xsd
 	    
-	    // 4. Extrair o símbolo do jogador da resposta
-	    // O servidor, ao aceitar o registo, deve responder com o nó <jogador simbolo='...'/>
-	    NodeList jogadores = registo.getElementsByTagName("jogador");
-	    
-	    return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
+	    return true;
 	}
 
 	private static void appendAttribute(StringBuilder xml, String name, String value) {

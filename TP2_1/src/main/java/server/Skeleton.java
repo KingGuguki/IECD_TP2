@@ -73,36 +73,30 @@ public class Skeleton {
         return d;
     }
     
-    public static boolean runEntrada(Socket sk, char simbolo) throws Exception {
+    public static int runLobby(Socket sk) throws Exception {
         BufferedReader is = new BufferedReader(new InputStreamReader(sk.getInputStream()));
         PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         
-        // Lê e valida a mensagem (pode ser <iniciar> ou <registar>)
         Document x = getNext(is); 
         
-        // Verifica se a mensagem tem a tag <iniciar>
         if (x.getElementsByTagName("iniciar").getLength() > 0) {
             System.out.println("   -> Recebido pedido de LOGIN...");
-            // Copia para aqui toda a lógica que estava dentro do antigo runIniciar
             String Nome  = getMethod(x,"iniciar").getAttribute("nickname");
             String Senha = getMethod(x,"iniciar").getAttribute("senha");
             
             User jg = User._authenticate(Nome, Senha);
             if(jg == null) throw new Exception("Falhou a autenticação do utilizador '"+Nome+"'!");
             
-            Document d=XMLDoc.parseString(jg.toXMLString(simbolo));
-            Node jogador = d.getElementsByTagName("jogador").item(0);
-            Node cloneElement = x.importNode(jogador, true);
-            x.getElementsByTagName("iniciar").item(0).appendChild(cloneElement);
+            // Responder com <iniciar> SEM o símbolo, pois ainda não está em jogo
+            Document respostaDoc = XMLDoc.parseString("<metodo><iniciar nickname='" + xmlAttribute(Nome)
+                    + "' senha='" + xmlAttribute(Senha) + "'/></metodo>");
             
             registarSocketUtilizador(sk, Nome);
-            os.println(XMLDoc.documentToString(x));
-            return true;
+            os.println(XMLDoc.documentToString(respostaDoc));
+            return 0; // continue no lobby
         } 
-        // Verifica se a mensagem tem a tag <registar>
         else if (x.getElementsByTagName("registar").getLength() > 0) {
             System.out.println("   -> Recebido pedido de REGISTO...");
-            // Copia para aqui toda a lógica que fizemos há bocado para o Registo
             Element reg = getMethod(x, "registar");
             String nick  = reg.getAttribute("nickname");
             String senha = reg.getAttribute("senha");
@@ -116,32 +110,17 @@ public class Skeleton {
             String cor = reg.getAttribute("cor");
 
             User jg = User.register(nick, senha, firstNames, lastNames, email, gender, birthdate, foto, nac, cor);
-            
-            System.out.println("   ✅ Novo Jogador Registado: " + nick + " com o símbolo '" + simbolo + "'");
+            System.out.println("   ✅ Novo Jogador Registado: " + nick);
 
-            // 5. Preparar a Resposta (O truque do <iniciar>)
-            // Criamos o nó do jogador com os dados todos (foto, idade, etc.)
-            Document d = XMLDoc.parseString(jg.toXMLString(simbolo)); 
-            Node jogadorNode = d.getElementsByTagName("jogador").item(0);
-            
-            // Criamos uma nova resposta limpa com a tag <iniciar> para o metodos-cli.xsd deixar passar!
             Document respostaDoc = XMLDoc.parseString("<metodo><iniciar nickname='" + xmlAttribute(nick)
                     + "' senha='" + xmlAttribute(senha) + "'/></metodo>");
             
-            // Importamos e anexamos o nó do jogador dentro do <iniciar>
-            Node cloneElement = respostaDoc.importNode(jogadorNode, true);
-            respostaDoc.getElementsByTagName("iniciar").item(0).appendChild(cloneElement);
-            
-            // 6. Enviar o XML final de volta para o Stub
-            String msgResposta = XMLDoc.documentToString(respostaDoc);
             registarSocketUtilizador(sk, nick);
-            os.println(msgResposta);
-            return true;
+            os.println(XMLDoc.documentToString(respostaDoc));
+            return 0; // continue no lobby
         } 
-        // Pedido de atualização de perfil (não entra na fila de jogo)
         else if (x.getElementsByTagName("atualizar_perfil").getLength() > 0) {
             System.out.println("   -> Recebido pedido de ATUALIZAÇÃO DE PERFIL...");
-
             Element req = getMethod(x, "atualizar_perfil");
             String nick = req.getAttribute("nickname");
             String novaFoto = req.getAttribute("foto");
@@ -161,13 +140,35 @@ public class Skeleton {
             User._save();
             User._load();
 
-            // Responde com a própria estrutura válida no metodos-cli.xsd
             os.println(XMLDoc.documentToString(x));
-            return false;
+            return 0; // continue no lobby
         } 
-        else {
-            throw new Exception("Operação de entrada desconhecida!");
+        else if (x.getElementsByTagName("entrar_fila").getLength() > 0) {
+            System.out.println("   -> Recebido pedido de ENTRAR NA FILA...");
+            return 1; // action: entrar na fila publica
         }
+        else if (x.getElementsByTagName("desafiar").getLength() > 0) {
+            System.out.println("   -> Recebido pedido de DESAFIAR PRIVADO...");
+            return 2; // action: desafiar
+        }
+        else {
+            throw new Exception("Operação de lobby desconhecida!");
+        }
+    }
+    
+    public static void sendEntrarFilaResponse(Socket sk, char simbolo) throws Exception {
+        PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
+        String username = obterSocketUtilizador(sk);
+        User jg = User._obtain(username);
+        
+        Document d = XMLDoc.parseString(jg.toXMLString(simbolo));
+        Node jogadorNode = d.getElementsByTagName("jogador").item(0);
+        
+        Document respostaDoc = XMLDoc.parseString("<metodo><entrar_fila/></metodo>");
+        Node cloneElement = respostaDoc.importNode(jogadorNode, true);
+        respostaDoc.getElementsByTagName("entrar_fila").item(0).appendChild(cloneElement);
+        
+        os.println(XMLDoc.documentToString(respostaDoc));
     }
 	/**
 	 * Método que atende a chamada Iniciar.
