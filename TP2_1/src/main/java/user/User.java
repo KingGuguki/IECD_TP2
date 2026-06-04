@@ -1658,7 +1658,7 @@ public class User {
 	}
     }
 
-    private static boolean incrementarEstatistica(String username, String campo) throws XPathExpressionException {
+    private static boolean incrementarEstatistica(String username, String campo, int valor) throws XPathExpressionException {
 	NodeList us = XMLDoc.getXPath("/users/user[username/text()='" + username + "']", doc);
 	if (us.getLength() != 1) {
 	    return false;
@@ -1667,29 +1667,76 @@ public class User {
 	Element user = (Element) us.item(0);
 	ensureChildAfter(user, "vitorias", "password");
 	ensureChildAfter(user, "derrotas", "vitorias");
-	ensureChildAfter(user, "tempo", "derrotas");
+	ensureChildAfter(user, "empates", "derrotas");
+	ensureChildAfter(user, "tempo", "empates");
 
 	Element target = getDirectChild(user, campo);
 	if (target == null) {
 	    return false;
 	}
 	int atual = parseIntOrZero(target.getTextContent());
-	target.setTextContent(String.valueOf(atual + 1));
+	target.setTextContent(String.valueOf(atual + valor));
 	return true;
     }
 
-    public static synchronized void registarResultadoJogo(String vencedor, String vencido) throws Exception {
+    private static boolean incrementarEstatistica(String username, String campo) throws XPathExpressionException {
+        return incrementarEstatistica(username, campo, 1);
+    }
+
+    public static synchronized void registarResultadoJogo(String jogador1, String jogador2, String vencedor, boolean empate, long duracaoSegundos) throws Exception {
 	boolean alterou = false;
-	if (vencedor != null && !vencedor.isBlank()) {
-	    alterou = incrementarEstatistica(vencedor, "vitorias") || alterou;
-	}
-	if (vencido != null && !vencido.isBlank()) {
-	    alterou = incrementarEstatistica(vencido, "derrotas") || alterou;
-	}
+        
+        if (empate) {
+            if (jogador1 != null && !jogador1.isBlank()) {
+                alterou = incrementarEstatistica(jogador1, "empates") || alterou;
+            }
+            if (jogador2 != null && !jogador2.isBlank()) {
+                alterou = incrementarEstatistica(jogador2, "empates") || alterou;
+            }
+        } else {
+            String vencido = jogador1.equals(vencedor) ? jogador2 : jogador1;
+            if (vencedor != null && !vencedor.isBlank()) {
+                alterou = incrementarEstatistica(vencedor, "vitorias") || alterou;
+            }
+            if (vencido != null && !vencido.isBlank()) {
+                alterou = incrementarEstatistica(vencido, "derrotas") || alterou;
+            }
+        }
+        
+        if (jogador1 != null && !jogador1.isBlank()) {
+            alterou = incrementarEstatistica(jogador1, "tempo", (int) duracaoSegundos) || alterou;
+        }
+        if (jogador2 != null && !jogador2.isBlank()) {
+            alterou = incrementarEstatistica(jogador2, "tempo", (int) duracaoSegundos) || alterou;
+        }
+
 	if (alterou) {
 	    _save();
 	    _load();
 	}
+    }
+    
+    public int getVitorias() {
+        return getEstatistica("vitorias");
+    }
+    public int getDerrotas() {
+        return getEstatistica("derrotas");
+    }
+    public int getEmpates() {
+        return getEstatistica("empates");
+    }
+    public int getTempo() {
+        return getEstatistica("tempo");
+    }
+
+    private int getEstatistica(String campo) {
+        try {
+            NodeList us = XMLDoc.getXPath("/users/user[userid/text()='" + this.userId + "']/" + campo, doc);
+            if (us.getLength() == 1) {
+                return parseIntOrZero(us.item(0).getTextContent());
+            }
+        } catch (Exception e) {}
+        return 0;
     }
 
     public static void lock(String username, String valor) throws XPathExpressionException {

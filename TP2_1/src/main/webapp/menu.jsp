@@ -32,6 +32,11 @@
     String nomeCompleto = "";
     String nacionalidade = "";
 
+    int vitorias = 0;
+    int derrotas = 0;
+    int empates = 0;
+    double tempoMedio = 0;
+
     try {
         User._load();
         jogador = User._obtain(username);
@@ -44,6 +49,15 @@
             nacionalidade = jogador.getPtNationality();
         } catch (Exception e) {
             nacionalidade = "";
+        }
+        
+        vitorias = jogador.getVitorias();
+        derrotas = jogador.getDerrotas();
+        empates = jogador.getEmpates();
+        int tempo = jogador.getTempo();
+        int totalJogos = vitorias + derrotas + empates;
+        if (totalJogos > 0) {
+            tempoMedio = (double) tempo / totalJogos;
         }
     } catch (Exception e) {
         response.sendRedirect("login.jsp");
@@ -205,6 +219,25 @@
             <% if (nacionalidade != null && !nacionalidade.isBlank()) { %>
                 <p>Nacionalidade: <%= nacionalidade %></p>
             <% } %>
+            
+            <div style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 12px; display: flex; gap: 16px; justify-content: space-around;">
+                <div style="text-align: center;">
+                    <div style="color: #4ade80; font-weight: bold; font-size: 1.2rem;"><%= vitorias %></div>
+                    <div style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Vitórias</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="color: #f87171; font-weight: bold; font-size: 1.2rem;"><%= derrotas %></div>
+                    <div style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Derrotas</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="color: #fbbf24; font-weight: bold; font-size: 1.2rem;"><%= empates %></div>
+                    <div style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Empates</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="color: #60a5fa; font-weight: bold; font-size: 1.2rem;"><%= tempoMedio > 0 ? String.format("%.1f", tempoMedio) + "s" : "-" %></div>
+                    <div style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase;">Tempo Médio</div>
+                </div>
+            </div>
         </div>
 
         <div class="card">
@@ -217,6 +250,10 @@
                 <a class="action" href="perfil.jsp">
                     <strong>Editar perfil</strong>
                     <span>Atualiza os dados pessoais, a fotografia e a cor de fundo preferida.</span>
+                </a>
+                <a class="action" href="halloffame.jsp" style="border-color: rgba(251, 191, 36, 0.4);">
+                    <strong style="color: #fbbf24;">🏆 Hall of Fame</strong>
+                    <span>Vê o ranking dos melhores jogadores e os seus tempos médios.</span>
                 </a>
                 <a class="action" href="login.jsp?acao=logout">
                     <strong>Terminar sessão</strong>
