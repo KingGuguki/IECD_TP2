@@ -39,6 +39,9 @@
 			</xs:element>
 			<xs:element type="entrarFilaType" name="entrar_fila"/>
 			<xs:element type="desafiarType" name="desafiar"/>
+			<xs:element type="cancelarDesafioType" name="cancelar_desafio"/>
+			<xs:element type="verificarConvitesType" name="verificar_convites"/>
+			<xs:element type="aceitarDesafioType" name="aceitar_desafio"/>
 		</xs:choice>
 	</xs:complexType>
 
@@ -198,6 +201,21 @@
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="desafiarType">
+		<xs:sequence>
+			<xs:element type="jogadorType" name="jogador" minOccurs="1"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="cancelarDesafioType"/>
+	<xs:complexType name="verificarConvitesType">
+		<xs:sequence>
+			<xs:element name="convite" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:attribute name="de" type="xs:string" use="required"/>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="aceitarDesafioType">
 		<xs:sequence>
 			<xs:element type="jogadorType" name="jogador" minOccurs="1"/>
 		</xs:sequence>

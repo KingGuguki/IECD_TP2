@@ -63,7 +63,7 @@ public class Skeleton {
     }
     
     // Lê a próxima linha/mensagem e devolve num Document
-    private static Document getNext(BufferedReader is) throws Exception {
+    public static Document getNext(BufferedReader is) throws Exception {
 	// Lê a linha que contém a mensagem.
     	String line=is.readLine();
     	registaLog("Servidor{"+line+"}");
@@ -149,7 +149,26 @@ public class Skeleton {
         }
         else if (x.getElementsByTagName("desafiar").getLength() > 0) {
             System.out.println("   -> Recebido pedido de DESAFIAR PRIVADO...");
+            String alvo = getMethod(x, "desafiar").getAttribute("alvo");
+            String eu = obterSocketUtilizador(sk);
+            Servidor.convitesPendentes.put(alvo, eu);
             return 2; // action: desafiar
+        }
+        else if (x.getElementsByTagName("verificar_convites").getLength() > 0) {
+            String eu = obterSocketUtilizador(sk);
+            boolean isInvited = Servidor.convitesPendentes.containsKey(eu);
+            if (isInvited) {
+                String inviter = Servidor.convitesPendentes.get(eu);
+                os.println("<metodo><verificar_convites><convite de='" + xmlAttribute(inviter) + "'/></verificar_convites></metodo>");
+            } else {
+                os.println("<metodo><verificar_convites/></metodo>");
+            }
+            return 0; // continue in lobby
+        }
+        else if (x.getElementsByTagName("aceitar_desafio").getLength() > 0) {
+            System.out.println("   -> Recebido pedido de ACEITAR DESAFIO...");
+            // O aceitar_desafio equivale a entrar na fila! A lógica de interceção VIP no Servidor fará o resto.
+            return 1;
         }
         else {
             throw new Exception("Operação de lobby desconhecida!");

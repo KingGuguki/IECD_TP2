@@ -227,4 +227,80 @@
     </div>
 </div>
 </body>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let isInviteOpen = false;
+
+        function checkInvites() {
+            if (isInviteOpen) return;
+            fetch("lobby?action=verificar_convites")
+                .then(r => r.json())
+                .then(data => {
+                    if (data.convite && data.convite !== "null" && !isInviteOpen) {
+                        isInviteOpen = true;
+                        showInviteModal(data.convite);
+                    }
+                })
+                .catch(err => console.error("Erro no polling de convites:", err));
+        }
+
+        function showInviteModal(inviter) {
+            const overlay = document.createElement("div");
+            overlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); z-index:9999; display:flex; align-items:center; justify-content:center;";
+            
+            const modal = document.createElement("div");
+            modal.style.cssText = "background:var(--panel); border:1px solid rgba(148, 163, 184, 0.2); border-radius:18px; padding:32px; box-shadow:0 25px 50px rgba(0,0,0,0.5); text-align:center; max-width:400px; width:90%; color:var(--text); animation: popIn 0.3s ease-out;";
+            
+            modal.innerHTML = `
+                <div style="font-size:3rem; margin-bottom:16px;">⚔️</div>
+                <h2 style="margin:0 0 12px; font-size:1.5rem;">Foste Desafiado!</h2>
+                <p style="color:var(--muted); margin-bottom:24px; font-size:1.1rem;">O jogador <strong style="color:var(--accent);">@\${inviter}</strong> convidou-te para uma partida privada!</p>
+                <div style="display:flex; gap:12px; justify-content:center;">
+                    <button id="btnRecusarConvite" style="padding:12px 24px; border-radius:10px; border:none; background:rgba(255,255,255,0.1); color:white; font-weight:600; cursor:pointer; flex:1;">Ignorar</button>
+                    <button id="btnAceitarConvite" style="padding:12px 24px; border-radius:10px; border:none; background:var(--accent); color:black; font-weight:bold; cursor:pointer; flex:1; box-shadow:0 4px 15px rgba(255,255,255,0.2);">Aceitar Desafio</button>
+                </div>
+            `;
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            document.getElementById("btnRecusarConvite").addEventListener("click", () => {
+                document.body.removeChild(overlay);
+                isInviteOpen = false;
+            });
+
+            document.getElementById("btnAceitarConvite").addEventListener("click", () => {
+                const btn = document.getElementById("btnAceitarConvite");
+                btn.disabled = true;
+                btn.innerHTML = "A entrar...";
+                
+                fetch("lobby?action=aceitar_desafio&de=" + encodeURIComponent(inviter))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === "ok") {
+                            window.location.href = "jogo.jsp";
+                        } else {
+                            alert("Erro ao aceitar convite: " + data.error);
+                            document.body.removeChild(overlay);
+                            isInviteOpen = false;
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Ocorreu um erro de ligação.");
+                        document.body.removeChild(overlay);
+                        isInviteOpen = false;
+                    });
+            });
+        }
+
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }`;
+        document.head.appendChild(style);
+
+        // Verifica os convites a cada 3 segundos
+        setInterval(checkInvites, 3000);
+        checkInvites();
+    });
+</script>
 </html>

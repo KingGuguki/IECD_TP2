@@ -40,6 +40,9 @@
 			<xs:element type="atualizarPerfilType" name="atualizar_perfil"/>
 			<xs:element type="entrarFilaType" name="entrar_fila"/>
 			<xs:element type="desafiarType" name="desafiar"/>
+			<xs:element type="cancelarDesafioType" name="cancelar_desafio"/>
+			<xs:element type="verificarConvitesType" name="verificar_convites"/>
+			<xs:element type="aceitarDesafioType" name="aceitar_desafio"/>
 		</xs:choice>
 	</xs:complexType>
 	<xs:complexType name="iniciarType">
@@ -145,5 +148,10 @@
 	<xs:complexType name="entrarFilaType"/>
 	<xs:complexType name="desafiarType">
 		<xs:attribute name="alvo" type="xs:string" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="cancelarDesafioType"/>
+	<xs:complexType name="verificarConvitesType"/>
+	<xs:complexType name="aceitarDesafioType">
+		<xs:attribute name="de" type="xs:string" use="required"/>
 	</xs:complexType>
 </xs:schema>

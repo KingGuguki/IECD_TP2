@@ -7,6 +7,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 import user.User;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  * Classe `Accept` representa uma thread responsável por tratar a
@@ -111,51 +113,69 @@ class ServidorDedicado extends Thread {
             char turnoAtual = 'X';
 
             // Ciclo para gerir a interação entre jogadores suportando a jogada Bónus
-            // Ciclo para gerir a interação entre jogadores suportando a jogada Bónus
             try {
                 for (;;) 
                 {
                     if (turnoAtual == 'X') 
                     {
-                        Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
+                        // Ciclo para permitir múltiplos obter antes do jogar
+                        while (true) {
+                            Document docX = Skeleton.getNext(isX);
+                            if (docX.getElementsByTagName("obter").getLength() > 0) {
+                                // Responde ao obter manualmente
+                                osX.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+                            } else if (docX.getElementsByTagName("jogar").getLength() > 0) {
+                                // Extrai e executa a jogada
+                                Element jogada = (Element) docX.getElementsByTagName("jogar").item(0);
+                                short jogadaNum = Short.parseShort(jogada.getAttribute("jogada"));
+                                jogo.joga(jogadaNum, 'X');
+                                osX.println("<metodo><jogar>" + jogo.tabuleiroToXML() + "</jogar></metodo>");
+                                break;
+                            } else {
+                                throw new Exception("Comando inválido esperado: obter ou jogar");
+                            }
+                        }
                         
                         if (!jogo.terminou()) 
                         {
-                            jogo = Skeleton.runJogar(isX, osX, 'X', connectionX, jogo);
-                            
-                            // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
-                            if (jogo.getEstado().equals("ND")) 
-                            {
+                            if (jogo.getEstado().equals("ND")) {
                                 turnoAtual = 'O';
                             }
                         } 
                         else 
                         {
-                            Skeleton.runObter(isO, osO, 'O', connectionO, jogo);
                             break;
                         }
                     } 
                     else 
                     {
-                        Skeleton.runObter(isO, osO, 'O', connectionO, jogo);
+                        while (true) {
+                            Document docO = Skeleton.getNext(isO);
+                            if (docO.getElementsByTagName("obter").getLength() > 0) {
+                                osO.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+                            } else if (docO.getElementsByTagName("jogar").getLength() > 0) {
+                                Element jogada = (Element) docO.getElementsByTagName("jogar").item(0);
+                                short jogadaNum = Short.parseShort(jogada.getAttribute("jogada"));
+                                jogo.joga(jogadaNum, 'O');
+                                osO.println("<metodo><jogar>" + jogo.tabuleiroToXML() + "</jogar></metodo>");
+                                break;
+                            } else {
+                                throw new Exception("Comando inválido esperado: obter ou jogar");
+                            }
+                        }
                         
                         if (!jogo.terminou()) 
                         {
-                            jogo = Skeleton.runJogar(isO, osO, 'O', connectionO, jogo);
-                            
-                            // Se não for jogada bónus (BN) nem inválida (IV), passa a vez
-                            if (jogo.getEstado().equals("ND")) 
-                            {
+                            if (jogo.getEstado().equals("ND")) {
                                 turnoAtual = 'X';
                             }
                         } 
                         else 
                         {
-                            Skeleton.runObter(isX, osX, 'X', connectionX, jogo);
                             break;
                         }
                     }
-                }
+                } // Fim do for (;;)
                 atualizarEstatisticasFimJogo(jogo);
             } catch (java.net.SocketTimeoutException timeoutEx) {
                 System.out.println("Servidor dedicado: Timeout atingido por inatividade de um jogador (" + turnoAtual + ")!");
@@ -167,6 +187,8 @@ class ServidorDedicado extends Thread {
                     Skeleton.runNotificarTimeout(osX, jogo);
                 }
                 atualizarEstatisticasFimJogo(jogo);
+            } catch (Exception e) {
+                System.out.println("⚠️ Jogo interrompido: " + e.getMessage());
             }
 		} catch (Exception e) {
 			System.out.println("Servidor dedicado: terminou o jogo ("+e.getMessage()+")!");

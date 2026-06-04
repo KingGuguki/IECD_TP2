@@ -424,6 +424,60 @@ public class Stub implements AutoCloseable {
 		return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
 	}
 
+	public char desafiar(String alvo) throws IOException, Exception {
+		os.println("<metodo><desafiar alvo=\"" + alvo + "\"/></metodo>");
+		String resposta = is.readLine();
+		registaLog("Cliente{"+resposta+"}");
+		if(resposta==null)
+			throw new Exception("Ligação ao servidor cancelada remotamente!");
+		
+		Document d = XMLDoc.parseString(resposta);
+		validXSD(d);
+		
+		NodeList jogadores = d.getElementsByTagName("jogador");
+		return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
+	}
+
+	public void cancelarDesafio() throws IOException, Exception {
+		os.println("<metodo><cancelar_desafio/></metodo>");
+		String resposta = is.readLine();
+		registaLog("Cliente{"+resposta+"}");
+		if(resposta==null)
+			throw new Exception("Ligação ao servidor cancelada remotamente!");
+		
+		Document d = XMLDoc.parseString(resposta);
+		validXSD(d);
+	}
+
+	public String verificarConvites() throws IOException, Exception {
+		os.println("<metodo><verificar_convites/></metodo>");
+		String resposta = is.readLine();
+		if(resposta==null) return null;
+		
+		Document d = XMLDoc.parseString(resposta);
+		validXSD(d);
+		
+		NodeList convites = d.getElementsByTagName("convite");
+		if (convites.getLength() > 0) {
+			return ((Element)convites.item(0)).getAttribute("de");
+		}
+		return null;
+	}
+
+	public char aceitarDesafio(String de) throws IOException, Exception {
+		os.println("<metodo><aceitar_desafio de=\"" + de + "\"/></metodo>");
+		String resposta = is.readLine();
+		registaLog("Cliente{"+resposta+"}");
+		if(resposta==null)
+			throw new Exception("Ligação ao servidor cancelada remotamente!");
+		
+		Document d = XMLDoc.parseString(resposta);
+		validXSD(d);
+		
+		NodeList jogadores = d.getElementsByTagName("jogador");
+		return ((Element)jogadores.item(0)).getAttribute("simbolo").charAt(0);
+	}
+
 	/**
 	 * Obtém o tabuleiro do jogo a partir do servidor.
 	 *

@@ -217,7 +217,7 @@
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const mySymbol = "<%= simbolo %>";
-        if (mySymbol && mySymbol.trim() !== "") {
+        if (mySymbol && mySymbol.trim() !== "" && mySymbol !== "null") {
             const boardEl = document.getElementById("board");
             const statusEl = document.getElementById("gameStatus");
             const CELL_SIZE = 70;
@@ -479,9 +479,51 @@
 
                             item.addEventListener("click", () => {
                                 searchInput.value = player.username;
+                                searchInput.disabled = true;
                                 suggestionsBox.style.display = "none";
-                                // Ação temporária antes de termos o Matchmaker ativo
-                                alert("Desafio enviado para @" + player.username + "! (Aguardando implementação do Matchmaker)");
+                                
+                                if (btnProcurar) {
+                                    btnProcurar.style.display = "none";
+                                }
+                                
+                                loadingFila.innerHTML = '<span style="display: block; animation: pulse 1.5s infinite; margin-bottom: 12px; color: var(--accent);">A aguardar aceitação de @' + player.username + '...</span>' +
+                                    '<button id="btnCancelarConvite" style="padding: 8px 16px; font-size: 0.9rem; background: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Cancelar Convite</button>';
+                                loadingFila.style.display = "block";
+
+                                fetch("lobby?action=desafiar&target=" + encodeURIComponent(player.username))
+                                    .then(r => {
+                                        if (!r.ok) return r.json().then(err => { throw err; });
+                                        return r.json();
+                                    })
+                                    .then(data => {
+                                        if (data.status === "ok") {
+                                            window.location.reload();
+                                        }
+                                    })
+                                    .catch(err => {
+                                        if (err.error && !err.error.includes("cancelada")) {
+                                            alert("Erro no convite: " + err.error);
+                                        }
+                                        resetConviteUI();
+                                    });
+
+                                document.getElementById("btnCancelarConvite").addEventListener("click", () => {
+                                    fetch("lobby?action=cancelar_desafio")
+                                        .then(r => r.json())
+                                        .then(() => {
+                                            resetConviteUI();
+                                        });
+                                });
+                                
+                                function resetConviteUI() {
+                                    searchInput.value = "";
+                                    searchInput.disabled = false;
+                                    loadingFila.style.display = "none";
+                                    loadingFila.innerHTML = '<span style="display: inline-block; animation: pulse 1.5s infinite;">A procurar adversário...</span>';
+                                    if (btnProcurar) {
+                                        btnProcurar.style.display = "block";
+                                    }
+                                }
                             });
 
                             suggestionsBox.appendChild(item);

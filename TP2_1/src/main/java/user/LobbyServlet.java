@@ -69,9 +69,28 @@ public class LobbyServlet extends HttpServlet {
                 }
             } 
             else if ("desafiar".equals(acao)) {
-                // String target = request.getParameter("target");
-                // TODO: Futuramente, usar XML próprio <desafiar alvo="X"/>.
-                char simbolo = stub.entrarFila(); 
+                String target = request.getParameter("target");
+                if (target == null || target.isBlank()) throw new Exception("Alvo não especificado");
+                char simbolo = stub.desafiar(target); 
+                session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
+                out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
+            }
+            else if ("cancelar_desafio".equals(acao)) {
+                // Ao enviar, a thread bloqueada no desafiar vai acordar com a resposta de erro/cancelamento
+                stub.cancelarDesafio();
+                out.print("{\"status\": \"ok\"}");
+            }
+            else if ("verificar_convites".equals(acao)) {
+                String inviter = stub.verificarConvites();
+                if (inviter != null) {
+                    out.print("{\"convite\": \"" + inviter + "\"}");
+                } else {
+                    out.print("{\"convite\": null}");
+                }
+            }
+            else if ("aceitar_desafio".equals(acao)) {
+                String de = request.getParameter("de");
+                char simbolo = stub.aceitarDesafio(de);
                 session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
                 out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
             }
