@@ -11,14 +11,14 @@ import java.util.concurrent.LinkedBlockingQueue;
  * 🕹️ Classe Servidor: Gere um jogo do galo multi-jogador usando TCP.
  * Atua como um "lobby" que emparelha jogadores e lança instâncias dedicadas.
  * * @author Engº Porfírio Filipe
- * */
+ */
 public class Servidor {
 
     // 🔌 Porto por omissão onde o servidor "escuta" novas ligações
     public final static int DEFAULT_PORT = 5025;
 
     // ⏱️ Tempo máximo de espera antes de o servidor se desligar por inatividade
-    private static int timeout = 0; 
+    private static int timeout = 0;
 
     // 🏁 Se true, o servidor fecha após terminar o primeiro jogo
     private static boolean single = false;
@@ -32,17 +32,20 @@ public class Servidor {
     public static void main(String[] args) {
         // Garantir que a aplicação Servidor grava na mesma pasta do Tomcat!
         util.XMLDoc.setContextoReal("src/main/webapp/");
-        
+
         int port = DEFAULT_PORT;
 
         // 📝 Processamento de argumentos da linha de comandos
-        if (args.length >= 1) port = Integer.parseInt(args[0]);
-        if (args.length >= 2) single = args[1].equalsIgnoreCase("S");
-        if (args.length >= 3) timeout = Integer.parseInt(args[2]);
+        if (args.length >= 1)
+            port = Integer.parseInt(args[0]);
+        if (args.length >= 2)
+            single = args[1].equalsIgnoreCase("S");
+        if (args.length >= 3)
+            timeout = Integer.parseInt(args[2]);
 
         // 📢 Logs de inicialização para o administrador do sistema
         System.out.println(single ? "⚠️ Modo: Jogo Único" : "🔄 Modo: Multi-Jogo");
-        
+
         // 📥 Criação da fila (FIFO) que gere os jogadores em espera
         filaGlobal = new Servidor().new FIFOJogador();
         FIFOJogador fIFOJogador = filaGlobal;
@@ -51,8 +54,8 @@ public class Servidor {
          * 🏗️ TAREFA DE EMPARELHAMENTO (Matchmaking)
          * Esta Thread corre em background para casar jogadores 2 a 2.
          */
-        new Thread(() -> { 
-            for(;;) { 
+        new Thread(() -> {
+            for (;;) {
                 Socket sk1 = null;
                 Socket sk2 = null;
                 try {
@@ -60,9 +63,9 @@ public class Servidor {
                     sk1 = fIFOJogador.remove();
                     // 🛑 BLOQUEANTE: Espera que o Jogador 2 entre na fila
                     sk2 = fIFOJogador.remove();
-                    
+
                     System.out.println("🤝 Par encontrado! A iniciar Servidor Dedicado...");
-                    
+
                     Socket skX = null;
                     Socket skO = null;
                     if (Math.random() < 0.5) {
@@ -72,26 +75,27 @@ public class Servidor {
                         skX = sk2;
                         skO = sk1;
                     }
-                    
+
                     Skeleton.sendEntrarFilaResponse(skX, 'X');
                     Skeleton.sendEntrarFilaResponse(skO, 'O');
-                    
+
                     // 🏎️ Lança uma thread separada para gerir a lógica deste jogo específico
                     Thread jogo = new ServidorDedicado(skX, skO);
-                    jogo.start(); 
+                    jogo.start();
 
                     // 🛑 Se for modo Single, espera o jogo acabar e encerra o programa
-                    if (single) { 
-                        try { jogo.join(); } catch (InterruptedException e) {}
+                    if (single) {
+                        try {
+                            jogo.join();
+                        } catch (InterruptedException e) {
+                        }
                         System.out.println("👋 Modo single-game terminado. A sair...");
                         System.exit(0);
-                    }    
+                    }
                 } catch (Exception e) {
                     System.out.println("❌ Erro na tarefa de gestão de fila.");
-                } catch (Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+                    e.printStackTrace();
+                }
             }
         }).start();
 
@@ -101,13 +105,13 @@ public class Servidor {
          */
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("🌍 Servidor TCP à escuta no porto: " + port);
-            
+
             while (true) {
                 System.out.println("⏳ Aguardando nova ligação...");
-                
+
                 // 🕒 Define quanto tempo o servidor espera por um cliente antes de dar erro
-                serverSocket.setSoTimeout(timeout); 
-                
+                serverSocket.setSoTimeout(timeout);
+
                 // 📞 Aceita a ligação do socket do cliente
                 Socket newSock = serverSocket.accept();
                 System.out.println("✅ Ligação aceite: " + newSock.getInetAddress());
@@ -117,7 +121,7 @@ public class Servidor {
                     fIFOJogador.add(newSock);
                 } catch (InterruptedException e) {
                     System.out.println("❌ Erro ao colocar jogador na fila.");
-                }    
+                }
             }
         } catch (IOException e) {
             System.err.println("🚨 Erro crítico no Servidor: " + e.getLocalizedMessage());
@@ -135,7 +139,7 @@ public class Servidor {
     private final class FIFOJogador {
         // 🧱 Fila que bloqueia a leitura se estiver vazia e a escrita se estiver cheia
         private final BlockingQueue<Socket> queue = new LinkedBlockingQueue<>();
-        
+
         // Alterado para iniciar com 'X' em vez de '1'
         private char proximoSimbolo = 'X';
 
@@ -148,20 +152,21 @@ public class Servidor {
                 try {
                     while (true) {
                         int acao = Skeleton.runLobby(element);
-                        
+
                         if (acao == 1) { // Entrar na fila publica
                             String username = Skeleton.obterSocketUtilizador(element);
-                            
+
                             // 🌟 INTERCEÇÃO PARA JOGADORES DE CONSOLA OU ACEITAÇÕES 🌟
                             // Se este jogador tiver um convite pendente para ele, intercetamos!
                             if (username != null) {
                                 String inviter = convitesPendentes.remove(username);
                                 if (inviter != null) {
                                     Socket inviterSocket = esperaVIP.remove(inviter);
-                                    
+
                                     if (inviterSocket != null && !inviterSocket.isClosed()) {
-                                        System.out.println("🎉 Convite aceite implicitamente/explicitamente por: " + username);
-                                        
+                                        System.out.println(
+                                                "🎉 Convite aceite implicitamente/explicitamente por: " + username);
+
                                         Socket skX = null;
                                         Socket skO = null;
                                         if (Math.random() < 0.5) {
@@ -171,11 +176,11 @@ public class Servidor {
                                             skX = element;
                                             skO = inviterSocket;
                                         }
-                                        
+
                                         // Associa os símbolos e envia respostas
                                         Skeleton.sendEntrarFilaResponse(skX, 'X');
                                         Skeleton.sendEntrarFilaResponse(skO, 'O');
-                                        
+
                                         // Arranca logo com a thread dedicada!
                                         ServidorDedicado sd = new ServidorDedicado(skX, skO);
                                         sd.start();
@@ -185,17 +190,17 @@ public class Servidor {
                             }
 
                             queue.put(element);
-                            break; 
-                        } 
-                        else if (acao == 2) { // Desafiar privado (Entra na fila VIP)
+                            break;
+                        } else if (acao == 2) { // Desafiar privado (Entra na fila VIP)
                             String username = Skeleton.obterSocketUtilizador(element);
                             esperaVIP.put(username, element);
-                            
+
                             // Lança uma thread para vigiar se este socket envia cancelar!
                             new Thread(() -> {
                                 try {
                                     element.setSoTimeout(500); // Para poder sair do ciclo se esperaVIP remover
-                                    BufferedReader is = new java.io.BufferedReader(new java.io.InputStreamReader(element.getInputStream()));
+                                    BufferedReader is = new java.io.BufferedReader(
+                                            new java.io.InputStreamReader(element.getInputStream()));
                                     while (esperaVIP.containsKey(username)) {
                                         try {
                                             String linha = is.readLine();
@@ -203,10 +208,11 @@ public class Servidor {
                                                 System.out.println("🚫 Jogador " + username + " cancelou o convite.");
                                                 esperaVIP.remove(username);
                                                 convitesPendentes.values().removeIf(val -> val.equals(username));
-                                                
-                                                java.io.PrintWriter os = new java.io.PrintWriter(element.getOutputStream(), true);
+
+                                                java.io.PrintWriter os = new java.io.PrintWriter(
+                                                        element.getOutputStream(), true);
                                                 os.println("<metodo><cancelar_desafio/></metodo>");
-                                                
+
                                                 add(element);
                                                 break;
                                             } else if (linha == null) {
@@ -219,7 +225,8 @@ public class Servidor {
                                         }
                                     }
                                     element.setSoTimeout(timeout); // restaura o timeout normal
-                                } catch (Exception e) {}
+                                } catch (Exception e) {
+                                }
                             }).start();
 
                             break; // Sai da thread do Lobby normal
@@ -228,13 +235,17 @@ public class Servidor {
                 } catch (Exception e) {
                     System.out.println("⚠️ Jogador saiu do lobby: " + e.getMessage());
                     Skeleton.limparSocketUtilizador(element);
-                    try { element.close(); } catch (IOException e1) {}
+                    try {
+                        element.close();
+                    } catch (IOException e1) {
+                    }
                 }
             }).start();
         }
 
         /**
-         * 📤 Retira um jogador da fila. 
+         * 📤 Retira um jogador da fila.
+         * 
          * @return O Socket do jogador. Se a fila estiver vazia, a thread "dorme" aqui.
          */
         public Socket remove() throws InterruptedException {
@@ -249,7 +260,8 @@ public class Servidor {
         if (filaGlobal != null && sk != null) {
             try {
                 filaGlobal.add(sk);
-            } catch (InterruptedException e) { }
+            } catch (InterruptedException e) {
+            }
         }
     }
 }
