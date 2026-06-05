@@ -193,8 +193,8 @@
                         : "<div class='avatar'>" + p.username.charAt(0).toUpperCase() + "</div>";
                         
                     let flagHtml = ""; 
-                    if (p.isoCode && p.isoCode.length === 2) {
-                        flagHtml = "<img src='https://flagcdn.com/w20/" + p.isoCode.toLowerCase() + ".png' alt='" + p.isoCode + "' style='vertical-align: middle; margin-right: 5px; box-shadow: 0 0 2px rgba(0,0,0,0.5);'>";
+                    if (p.flagBase64 && p.flagBase64.length > 0) {
+                        flagHtml = "<img src='data:image/png;base64," + p.flagBase64 + "' alt='" + p.isoCode + "' style='vertical-align: middle; margin-right: 5px; box-shadow: 0 0 2px rgba(0,0,0,0.5); width: 20px; height: auto;'>";
                     }
 
                     html += "<tr>" +

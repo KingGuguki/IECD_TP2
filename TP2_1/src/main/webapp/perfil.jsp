@@ -64,6 +64,7 @@
 
     User jogador;
     String fotoBase64 = "";
+    String flagBase64 = "";
     String cor = "#0F172A";
     String firstNames = "";
     String lastNames = "";
@@ -71,6 +72,7 @@
     String gender = "X";
     String birthdate = "";
     String nationality = "";
+    String nationalityFull = "";
 
     try {
         User._load();
@@ -90,6 +92,8 @@
     gender = (jogador.getGender() == null || jogador.getGender().isBlank()) ? "X" : jogador.getGender();
     birthdate = (jogador.getBirthdate() == null) ? "" : jogador.getBirthdate().toString();
     nationality = (jogador.getNationality() == null) ? "" : jogador.getNationality().getAbbreviation();
+    nationalityFull = (jogador.getNationality() == null) ? "" : jogador.getPtNationality();
+    flagBase64 = (jogador.getNationality() == null) ? "" : jogador.getNationality().getFlag().getBase64();
 
     String acao = request.getParameter("acao");
     if ("guardar".equals(acao)) {
@@ -123,6 +127,8 @@
             gender = (jogador.getGender() == null || jogador.getGender().isBlank()) ? "X" : jogador.getGender();
             birthdate = (jogador.getBirthdate() == null) ? "" : jogador.getBirthdate().toString();
             nationality = (jogador.getNationality() == null) ? "" : jogador.getNationality().getAbbreviation();
+            nationalityFull = (jogador.getNationality() == null) ? "" : jogador.getPtNationality();
+            flagBase64 = (jogador.getNationality() == null) ? "" : jogador.getNationality().getFlag().getBase64();
             mensagem = "Perfil atualizado com sucesso.";
         } catch (Exception e) {
             erro = e.getLocalizedMessage();
@@ -315,7 +321,7 @@
     <div class="hero">
         <div class="card">
             <h1>Editar perfil</h1>
-            <p>Atualiza os dados do perfil. O username e a password nao podem ser alterados nesta pagina.</p>
+            <p>Atualize os dados do seu perfil.</p>
 
             <% if (mensagem != null) { %>
                 <div class="status ok"><%= mensagem %></div>
@@ -331,8 +337,16 @@
                 <% } %>
             </div>
 
+
             <p>Jogador: <strong><%= username %></strong></p>
-            <p>Símbolo atual: <strong><%= simbolo %></strong></p>
+            <% if (nationality != null && !nationality.isEmpty()) { %>
+            <p>
+                <% if (!flagBase64.isBlank()) { %>
+                <img src="data:image/png;base64,<%= flagBase64 %>" alt="<%= nationality %>" style="vertical-align: middle; margin-right: 5px; box-shadow: 0 0 2px rgba(0,0,0,0.5); width: 20px; height: auto;">
+                <% } %>
+                <strong><%= nationalityFull.isBlank() ? "Desconhecida" : nationalityFull %></strong>
+            </p>
+            <% } %>
             <p>Cor atual: <span class="swatch"></span><strong><%= cor %></strong></p>
         </div>
 
@@ -342,12 +356,12 @@
                 <textarea id="fotoBase64" name="fotoBase64" style="display:none;"><%= fotoBase64 %></textarea>
 
                 <div class="field">
-                    <label for="firstNames">Primeiros nomes</label>
+                    <label for="firstNames">Primeiro nome</label>
                     <input id="firstNames" name="firstNames" value="<%= firstNames %>" required>
                 </div>
 
                 <div class="field">
-                    <label for="lastNames">Apelidos</label>
+                    <label for="lastNames">Apelido</label>
                     <input id="lastNames" name="lastNames" value="<%= lastNames %>" required>
                 </div>
 
@@ -357,7 +371,7 @@
                 </div>
 
                 <div class="field">
-                    <label for="gender">Genero</label>
+                    <label for="gender">Género</label>
                     <select id="gender" name="gender">
                         <option value="X" <%= "X".equals(gender) ? "selected" : "" %>>Nao definido</option>
                         <option value="M" <%= "M".equals(gender) ? "selected" : "" %>>Masculino</option>
@@ -386,12 +400,12 @@
                     </div>
                     <div>
                         <p style="margin:0; color: var(--text);">Escolhe uma nova fotografia</p>
-                        <p style="margin:4px 0 0;">Tamanho máximo: 2MB</p>
+                        <p style="margin:4px 0 0;">Tamanho máximo: 100KB</p>
                     </div>
                 </div>
 
                 <div class="field">
-                    <label for="fotoArquivo">Fotografia</label>
+                    <label for="fotoArquivo">Fotografia (Máx: 100KB)</label>
                     <input id="fotoArquivo" type="file" accept="image/*">
                 </div>
 
@@ -421,9 +435,9 @@
                 return;
             }
 
-            // O limite nativo do Tomcat para o POST é 2MB (2097152 bytes)
-            if (file.size > 2097152) {
-                alert("A imagem é demasiado grande! O limite máximo é de 2MB.");
+            // O limite é 100KB (102400 bytes) segundo as regras do servidor (user.xsd)
+            if (file.size > 100 * 1024) {
+                alert("A fotografia é demasiado grande! O limite máximo permitido é de 100 KB.");
                 this.value = ""; // Limpa a seleção
                 return;
             }

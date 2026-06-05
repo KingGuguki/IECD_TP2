@@ -42,7 +42,10 @@ public class GameServlet extends HttpServlet {
         try {
             if ("estado".equals(acao)) {
                 // Obtém o elemento <tabuleiro> atual do Servidor TCP
-                Element tabuleiro = stub.obter();
+                Element tabuleiro;
+                synchronized (stub) {
+                    tabuleiro = stub.obter();
+                }
                 
                 // Extrai a String XML para enviar para a Web
                 String xmlString = XMLDoc.documentToString(tabuleiro.getOwnerDocument());
@@ -95,7 +98,10 @@ public class GameServlet extends HttpServlet {
                 short linha = Short.parseShort(linhaStr);
                 
                 // Envia a jogada para o Servidor TCP. O Stub lança Exception se for inválida.
-                Element tabuleiro = stub.jogar(linha);
+                Element tabuleiro;
+                synchronized (stub) {
+                    tabuleiro = stub.jogar(linha);
+                }
                 
                 String xmlString = XMLDoc.documentToString(tabuleiro.getOwnerDocument());
                 String safeXml = xmlString.replace("\"", "\\\"").replace("\n", "").replace("\r", "");

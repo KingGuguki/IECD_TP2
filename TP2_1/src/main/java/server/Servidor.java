@@ -243,6 +243,15 @@ public class Servidor {
                     String dNome = Skeleton.obterSocketUtilizador(element);
                     String motivo = (e.getMessage() != null) ? e.getMessage() : "Desconexão da web";
                     System.out.println("⚠️ Jogador [" + (dNome != null ? dNome : "Desconhecido") + "] saiu do lobby (" + motivo + ")");
+                    
+                    if (!"Desconexão da web".equals(motivo) && !motivo.contains("Connection reset")) {
+                        try {
+                            java.io.PrintWriter os = new java.io.PrintWriter(element.getOutputStream(), true);
+                            String xmlMotivo = motivo.replace("&", "&amp;").replace("'", "&apos;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
+                            Skeleton.printAndLog(os, element, "<metodo><erro motivo='" + xmlMotivo + "'/></metodo>");
+                        } catch (Exception err) {}
+                    }
+
                     Skeleton.limparSocketUtilizador(element);
                     try {
                         element.close();

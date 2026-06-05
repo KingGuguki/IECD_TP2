@@ -529,6 +529,21 @@
 	</nationality>
 
 	<nationality>
+		<abbreviation>CK</abbreviation>
+		<name>Cook Islands</name>
+		<official>Cook Islands</official>
+		<pt-name>Ilhas Cook</pt-name>
+		<pt-nationality>cookiano(a)</pt-nationality>
+		<pt-male>cookiano</pt-male>
+		<pt-female>cookiana</pt-female>
+		<flag>iVBORw0KGgoAAAANSUhEUgAAABQAAAAKCAMAAACDi47UAAAATlBMVEUBIWkCImrBsMRFXZFv
+		gqo5UotZbp0UMnQ/V47IEC7PdYvSobLZfY/QxdQMK3AIJ214ia8jP32KmbrCfpZXTH7Dg5lOZZaBeZ
+		7QwdCBeZ+bQ57kAAAAY0lEQVQIHW3BWQ7DIAxAwQcY7ALZky73v2jdnyqRMsMRjVrZt4gLgR/7tKH3
+		NogBUorgHn+E1VTzGsBkaL2/28tIC25JEI+dWrG4YYpT42yecNPMWS64krl4mqolrkYV0ZF7X8rHA2
+		DEJAm8AAAAAElFTkSuQmCC</flag>
+	</nationality>
+
+	<nationality>
 		<abbreviation>CL</abbreviation>
 		<name>Chile</name>
 		<official>The Republic of Chile</official>

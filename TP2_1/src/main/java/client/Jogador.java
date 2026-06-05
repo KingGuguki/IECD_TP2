@@ -349,6 +349,8 @@ public class Jogador {
                         System.out.println(stub.tabuleiroPontosCaixasToTXT(tab));
                         
                         String estado = tab.getAttribute("estado");
+                        String vez = tab.getAttribute("vez");
+                        
                         if(!estado.equals("ND")) 
                         {
                             // Mostra o estado do jogo após a jogada.
@@ -360,12 +362,28 @@ public class Jogador {
                             }
                         }
                         
+                        // Se não for a vez deste jogador, aguarda. O servidor só responderá ao próximo obter() quando for a vez dele.
+                        if (vez != null && !vez.equals(String.valueOf(simbolo))) {
+                            System.out.println("À espera que o oponente jogue...");
+                            continue; // Volta ao início do ciclo, que chamará stub.obter() e bloqueará à espera do servidor.
+                        }
+                        
                         // Pede ao jogador para fazer uma jogada informando o ponto inicial e final.
                         System.out.print("Joga " + simbolo + " - Introduza o ponto inicial e final (ex: 1 2): ");
                         short jogada = readMoveFromDots(leitor, 3, 3);
                         
                         // Envia jogada para o servidor.
-                        stub.jogar(jogada);
+                        Element tabuleiroAposJogada = stub.jogar(jogada);
+                        
+                        // Mostra imediatamente o resultado da jogada para não parecer que o jogo encravou
+                        System.out.println(stub.tabuleiroPontosCaixasToTXT(tabuleiroAposJogada));
+                        String estadoAposJogada = tabuleiroAposJogada.getAttribute("estado");
+                        if(!estadoAposJogada.equals("ND")) {
+                            System.out.println(stub.estadoToTXT(estadoAposJogada));
+                            if(!estadoAposJogada.equals("IV") && !estadoAposJogada.equals("BN")) {
+                                break;
+                            }
+                        }
                     }
                     System.out.println("\n--- A partida terminou! ---");
                     System.out.println("Vais ser devolvido ao Lobby Principal.");

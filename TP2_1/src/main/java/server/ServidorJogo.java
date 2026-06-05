@@ -166,6 +166,9 @@ class ServidorDedicado extends Thread {
                                         Skeleton.getNext(isO, connectionO); // consome o pedido de obter pendente
                                     }
                                     Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                } else if (turnoAtual == 'O' && isO.ready()) {
+                                    Skeleton.getNext(isO, connectionO);
+                                    Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                                 }
                                 break;
                             } else {
@@ -211,6 +214,9 @@ class ServidorDedicado extends Thread {
                                     if (isX.ready()) {
                                         Skeleton.getNext(isX, connectionX); // consome o pedido de obter pendente
                                     }
+                                    Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                } else if (turnoAtual == 'X' && isX.ready()) {
+                                    Skeleton.getNext(isX, connectionX);
                                     Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                                 }
                                 break;

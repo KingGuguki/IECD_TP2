@@ -54,9 +54,11 @@ public class HallOfFameServlet extends HttpServlet {
                     String foto = u.getPhotography() != null ? u.getPhotography().getBase64() : "";
                     String nacionalidade = "";
                     String isoCode = "";
+                    String flagBase64 = "";
                     try {
                         nacionalidade = u.getPtNationality();
                         isoCode = u.getNationality().getAbbreviation();
+                        flagBase64 = u.getNationality().getFlag().getBase64();
                     } catch (Exception e) {}
                     
                     ranking.add(new PlayerStats(
@@ -65,6 +67,7 @@ public class HallOfFameServlet extends HttpServlet {
                         foto,
                         nacionalidade,
                         isoCode,
+                        flagBase64,
                         vitorias,
                         derrotas,
                         empates,
@@ -95,6 +98,7 @@ public class HallOfFameServlet extends HttpServlet {
                 json.append("\"photo\": \"").append(escapeJson(p.photo)).append("\", ");
                 json.append("\"nationality\": \"").append(escapeJson(p.nationality)).append("\", ");
                 json.append("\"isoCode\": \"").append(escapeJson(p.isoCode)).append("\", ");
+                json.append("\"flagBase64\": \"").append(escapeJson(p.flagBase64)).append("\", ");
                 json.append("\"vitorias\": ").append(p.vitorias).append(", ");
                 json.append("\"derrotas\": ").append(p.derrotas).append(", ");
                 json.append("\"empates\": ").append(p.empates).append(", ");
@@ -125,18 +129,20 @@ public class HallOfFameServlet extends HttpServlet {
         String photo;
         String nationality;
         String isoCode;
+        String flagBase64;
         int vitorias;
         int derrotas;
         int empates;
         double tempoMedio;
         
-        PlayerStats(String username, String fullName, String photo, String nationality, String isoCode,
+        PlayerStats(String username, String fullName, String photo, String nationality, String isoCode, String flagBase64,
                     int vitorias, int derrotas, int empates, double tempoMedio) {
             this.username = username;
             this.fullName = fullName;
             this.photo = photo;
             this.nationality = nationality;
             this.isoCode = isoCode;
+            this.flagBase64 = flagBase64;
             this.vitorias = vitorias;
             this.derrotas = derrotas;
             this.empates = empates;

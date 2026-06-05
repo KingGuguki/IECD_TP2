@@ -356,18 +356,18 @@
 
                 <div class="field">
                     <label for="regNickname">Nickname</label>
-                    <input id="regNickname" name="regNickname" minlength="4" maxlength="10" required>
+                    <input id="regNickname" name="regNickname" minlength="1" maxlength="10" required>
                 </div>
                 <div class="field">
                     <label for="regSenha">Senha</label>
                     <input id="regSenha" name="regSenha" type="password" required>
                 </div>
                 <div class="field">
-                    <label for="regFirstNames">Primeiros nomes</label>
+                    <label for="regFirstNames">Primeiro nome</label>
                     <input id="regFirstNames" name="regFirstNames" required>
                 </div>
                 <div class="field">
-                    <label for="regLastNames">Apelidos</label>
+                    <label for="regLastNames">Apelido</label>
                     <input id="regLastNames" name="regLastNames" required>
                 </div>
                 <div class="field">
@@ -397,7 +397,7 @@
                     <input id="regCor" name="regCor" type="color" value="#0F172A">
                 </div>
                 <div class="field">
-                    <label for="regFotoArquivo">Fotografia opcional</label>
+                    <label for="regFotoArquivo">Fotografia opcional (Máx: 100KB)</label>
                     <input id="regFotoArquivo" type="file" accept="image/*">
                 </div>
                 <div class="actions">
@@ -414,6 +414,12 @@
         regFotoArquivo.addEventListener('change', function () {
             const file = this.files && this.files[0];
             if (!file) {
+                regFotoBase64.value = '';
+                return;
+            }
+            if (file.size > 100 * 1024) {
+                alert('A fotografia é demasiado grande! O tamanho máximo permitido é de 100 KB.');
+                this.value = '';
                 regFotoBase64.value = '';
                 return;
             }

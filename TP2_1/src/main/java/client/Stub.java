@@ -285,6 +285,11 @@ public class Stub implements AutoCloseable {
         } catch (SAXException | IOException e) {
             throw new Exception("Recebeu mensagem inválida: " + e.getLocalizedMessage());
         }
+        
+        org.w3c.dom.NodeList erros = doc.getElementsByTagName("erro");
+        if (erros.getLength() > 0) {
+            throw new Exception(((org.w3c.dom.Element) erros.item(0)).getAttribute("motivo"));
+        }
     }
     
     /**
@@ -486,6 +491,20 @@ public class Stub implements AutoCloseable {
 	 * @throws IOException Se ocorrer um erro de leitura do socket.
 	 */
 	public Element obter() throws IOException, Exception {
+		if (is.ready()) {
+			String pendente = is.readLine();
+			registaLog("Cliente{" + pendente + "}");
+			if (pendente == null)
+				throw new Exception("Ligacao ao servidor cancelada remotamente!");
+			Document pendenteDoc = XMLDoc.parseString(pendente);
+			validXSD(pendenteDoc);
+			NodeList obterPendente = pendenteDoc.getElementsByTagName("obter");
+			if (obterPendente.getLength() == 1) {
+				return (Element) pendenteDoc.getElementsByTagName("tabuleiro").item(0);
+			}
+			throw new Exception("Resposta pendente inesperada no socket.");
+		}
+
 		// Envia a mensagem "obter" para o servidor.
 		os.println("<metodo><obter/></metodo>");
 		// Recebe a resposta do servidor e processa o XML.
@@ -535,6 +554,11 @@ public class Stub implements AutoCloseable {
 			
 			d = XMLDoc.parseString(resposta);  // consome a linha!
 			validXSD(d);
+
+			NodeList obter = d.getElementsByTagName("obter");
+			if (obter.getLength() > 0) {
+				return (Element) d.getElementsByTagName("tabuleiro").item(0);
+			}
 			
 			n = d.getElementsByTagName("jogar");
 			if (n.getLength() > 0) 

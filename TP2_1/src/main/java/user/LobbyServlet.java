@@ -20,6 +20,38 @@ import client.Stub;
 public class LobbyServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    private interface StubAction<T> {
+        T execute(Stub stub) throws Exception;
+    }
+
+    private <T> T executeWithRetry(HttpSession session, StubAction<T> action) throws Exception {
+        Stub stub = (Stub) session.getAttribute("tp2_stub");
+        try {
+            return action.execute(stub);
+        } catch (Exception socketMorto) {
+            String nick = (String) session.getAttribute("tp2_username");
+            String senha = (String) session.getAttribute("tp2_senha");
+            
+            if (nick != null && senha != null) {
+                java.net.Socket oldSocket = (java.net.Socket) session.getAttribute("tp2_socket");
+                if (oldSocket != null && !oldSocket.isClosed()) {
+                    try { oldSocket.close(); } catch (Exception e) {}
+                }
+                
+                java.net.Socket novoSocket = new java.net.Socket("localhost", 5025);
+                Stub novoStub = new Stub(novoSocket);
+                novoStub.iniciar(nick, senha);
+                
+                session.setAttribute("tp2_socket", novoSocket);
+                session.setAttribute("tp2_stub", novoStub);
+                
+                return action.execute(novoStub);
+            } else {
+                throw socketMorto;
+            }
+        }
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -40,53 +72,23 @@ public class LobbyServlet extends HttpServlet {
 
         try {
             if ("entrar_fila".equals(acao)) {
-                try {
-                    // Bloqueia a thread HTTP enquanto o Servidor TCP não encontrar match!
-                    char simbolo = stub.entrarFila(); 
-                    
-                    // Grava o símbolo recebido na sessão
-                    session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
-                    out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
-                } catch (Exception socketMorto) {
-                    // Se o Socket caiu (porque o jogo anterior fechou), tentamos reconectar silenciosamente!
-                    String nick = (String) session.getAttribute("tp2_username");
-                    String senha = (String) session.getAttribute("tp2_senha");
-                    
-                    if (nick != null && senha != null) {
-                        java.net.Socket oldSocket = (java.net.Socket) session.getAttribute("tp2_socket");
-                        if (oldSocket != null && !oldSocket.isClosed()) {
-                            try { oldSocket.close(); } catch (Exception e) {}
-                        }
-                        
-                        java.net.Socket novoSocket = new java.net.Socket("localhost", 5025);
-                        Stub novoStub = new Stub(novoSocket);
-                        novoStub.iniciar(nick, senha); // Auto-login invisível!
-                        
-                        session.setAttribute("tp2_socket", novoSocket);
-                        session.setAttribute("tp2_stub", novoStub);
-                        
-                        char simbolo = novoStub.entrarFila(); 
-                        session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
-                        out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
-                    } else {
-                        throw socketMorto;
-                    }
-                }
+                char simbolo = executeWithRetry(session, s -> s.entrarFila());
+                session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
+                out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
             } 
             else if ("desafiar".equals(acao)) {
                 String target = request.getParameter("target");
                 if (target == null || target.isBlank()) throw new Exception("Alvo não especificado");
-                char simbolo = stub.desafiar(target); 
+                char simbolo = executeWithRetry(session, s -> s.desafiar(target));
                 session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
                 out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
             }
             else if ("cancelar_desafio".equals(acao)) {
-                // Ao enviar, a thread bloqueada no desafiar vai acordar com a resposta de erro/cancelamento
-                stub.cancelarDesafio();
+                executeWithRetry(session, s -> { s.cancelarDesafio(); return null; });
                 out.print("{\"status\": \"ok\"}");
             }
             else if ("verificar_convites".equals(acao)) {
-                String inviter = stub.verificarConvites();
+                String inviter = executeWithRetry(session, s -> s.verificarConvites());
                 if (inviter != null) {
                     out.print("{\"convite\": \"" + inviter + "\"}");
                 } else {
@@ -95,7 +97,7 @@ public class LobbyServlet extends HttpServlet {
             }
             else if ("aceitar_desafio".equals(acao)) {
                 String de = request.getParameter("de");
-                char simbolo = stub.aceitarDesafio(de);
+                char simbolo = executeWithRetry(session, s -> s.aceitarDesafio(de));
                 session.setAttribute("tp2_simbolo", String.valueOf(simbolo));
                 out.print("{\"status\": \"ok\", \"simbolo\": \"" + simbolo + "\"}");
             }

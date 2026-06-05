@@ -257,11 +257,11 @@ public class User {
     public static boolean validarUserName(String username) {
 
 	// Tamanho mínimo e máximo do username
-	final int TAMANHO_MINIMO = 4;
+	final int TAMANHO_MINIMO = 1;
 	final int TAMANHO_MAXIMO = 10;
 
 	// Regex para validar caracteres permitidos no username
-	// A expressão regular valida sequências de carateres, com tamanho entre 4 e 10,
+	// A expressão regular valida sequências de carateres, com tamanho entre 1 e 10,
 	// que sejam apenas letras minúsculas, maiúsculas, números, underline e hífen,
 	// desde que não estejam vazias (deve ter pelo menos um caractere) e
 	// não contenham nenhum outro tipo de caractere especial

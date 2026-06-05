@@ -31,6 +31,7 @@
     String cor = "#0F172A";
     String nomeCompleto = "";
     String nacionalidade = "";
+    String flagBase64 = "";
 
     int vitorias = 0;
     int derrotas = 0;
@@ -47,8 +48,10 @@
         nomeCompleto = jogador.getName();
         try {
             nacionalidade = jogador.getPtNationality();
+            flagBase64 = jogador.getNationality().getFlag().getBase64();
         } catch (Exception e) {
             nacionalidade = "";
+            flagBase64 = "";
         }
         
         vitorias = jogador.getVitorias();
@@ -217,7 +220,11 @@
 
             <p>Nome completo: <%= nomeCompleto %></p>
             <% if (nacionalidade != null && !nacionalidade.isBlank()) { %>
-                <p>Nacionalidade: <%= nacionalidade %></p>
+                <p>Nacionalidade: 
+                <% if (flagBase64 != null && !flagBase64.isBlank()) { %>
+                    <img src="data:image/png;base64,<%= flagBase64 %>" alt="<%= nacionalidade %>" style="vertical-align: middle; margin-right: 5px; box-shadow: 0 0 2px rgba(0,0,0,0.5); width: 20px; height: auto;">
+                <% } %>
+                <%= nacionalidade %></p>
             <% } %>
             
             <div style="margin-top: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 12px; display: flex; gap: 16px; justify-content: space-around;">

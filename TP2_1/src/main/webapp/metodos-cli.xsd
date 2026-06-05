@@ -42,6 +42,11 @@
 			<xs:element type="cancelarDesafioType" name="cancelar_desafio"/>
 			<xs:element type="verificarConvitesType" name="verificar_convites"/>
 			<xs:element type="aceitarDesafioType" name="aceitar_desafio"/>
+			<xs:element type="erroType" name="erro">
+				<xs:annotation>
+					<xs:documentation>Elemento para transmitir erros de servidor para o cliente.</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 		</xs:choice>
 	</xs:complexType>
 
@@ -225,5 +230,8 @@
 		<xs:sequence>
 			<xs:element type="jogadorType" name="jogador" minOccurs="1"/>
 		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="erroType">
+		<xs:attribute type="xs:string" name="motivo" use="required"/>
 	</xs:complexType>
 </xs:schema>
