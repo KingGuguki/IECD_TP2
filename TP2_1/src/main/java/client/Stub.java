@@ -508,7 +508,7 @@ public class Stub implements AutoCloseable {
 	 * @throws IOException Se ocorrer um erro de comunicação com o servidor.
 	 * @throws Exception   Se ocorrer um erro ao processar a resposta do servidor.
 	 */
-	public void jogar(final short numero) throws IOException, Exception 
+	public Element jogar(final short numero) throws IOException, Exception 
 	{
 		// Modificado para aceitar o intervalo correto de linhas (1 a 12)
 		if (numero < 1 || numero > 12) 
@@ -519,17 +519,32 @@ public class Stub implements AutoCloseable {
 		// Envia a mensagem com a jogada para o servidor.
 		os.println("<metodo><jogar jogada='" + numero + "'/></metodo>");
 		
-		// Recebe a resposta do servidor e retorna o estado.
-		String resposta = is.readLine();
-		registaLog("Cliente{" + resposta + "}");
+		Document d = null;
+		NodeList n = null;
 		
-		if (resposta == null) 
-		{
-			throw new Exception("Ligação ao servidor cancelada remotamente!");
+		// Drenar respostas residuais de <obter> que possam ter ficado retidas no buffer TCP
+		while (true) {
+			String resposta = is.readLine();
+			if (resposta != null) {
+				registaLog("Cliente{" + resposta + "}");
+			}
+			if (resposta == null) 
+			{
+				throw new Exception("Ligação ao servidor cancelada remotamente!");
+			}
+			
+			d = XMLDoc.parseString(resposta);  // consome a linha!
+			validXSD(d);
+			
+			n = d.getElementsByTagName("jogar");
+			if (n.getLength() > 0) 
+			{
+				break; // Resposta correta recebida!
+			}
+			// Se for um <obter>, ignoramos e tentamos ler a próxima linha!
 		}
-		
-		Document d = XMLDoc.parseString(resposta);  // consome a linha!
-		validXSD(d);
+
+		return (Element) n.item(0).getFirstChild();
 	}
 
 	public void atualizarPerfil(String nick, String fotoBase64) throws Exception {

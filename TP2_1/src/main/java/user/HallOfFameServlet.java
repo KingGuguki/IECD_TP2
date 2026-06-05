@@ -53,8 +53,10 @@ public class HallOfFameServlet extends HttpServlet {
                     
                     String foto = u.getPhotography() != null ? u.getPhotography().getBase64() : "";
                     String nacionalidade = "";
+                    String isoCode = "";
                     try {
                         nacionalidade = u.getPtNationality();
+                        isoCode = u.getNationality().getAbbreviation();
                     } catch (Exception e) {}
                     
                     ranking.add(new PlayerStats(
@@ -62,6 +64,7 @@ public class HallOfFameServlet extends HttpServlet {
                         u.getName(),
                         foto,
                         nacionalidade,
+                        isoCode,
                         vitorias,
                         derrotas,
                         empates,
@@ -91,6 +94,7 @@ public class HallOfFameServlet extends HttpServlet {
                 json.append("\"fullName\": \"").append(escapeJson(p.fullName)).append("\", ");
                 json.append("\"photo\": \"").append(escapeJson(p.photo)).append("\", ");
                 json.append("\"nationality\": \"").append(escapeJson(p.nationality)).append("\", ");
+                json.append("\"isoCode\": \"").append(escapeJson(p.isoCode)).append("\", ");
                 json.append("\"vitorias\": ").append(p.vitorias).append(", ");
                 json.append("\"derrotas\": ").append(p.derrotas).append(", ");
                 json.append("\"empates\": ").append(p.empates).append(", ");
@@ -120,17 +124,19 @@ public class HallOfFameServlet extends HttpServlet {
         String fullName;
         String photo;
         String nationality;
+        String isoCode;
         int vitorias;
         int derrotas;
         int empates;
         double tempoMedio;
         
-        PlayerStats(String username, String fullName, String photo, String nationality, 
+        PlayerStats(String username, String fullName, String photo, String nationality, String isoCode,
                     int vitorias, int derrotas, int empates, double tempoMedio) {
             this.username = username;
             this.fullName = fullName;
             this.photo = photo;
             this.nationality = nationality;
+            this.isoCode = isoCode;
             this.vitorias = vitorias;
             this.derrotas = derrotas;
             this.empates = empates;

@@ -95,9 +95,12 @@ public class GameServlet extends HttpServlet {
                 short linha = Short.parseShort(linhaStr);
                 
                 // Envia a jogada para o Servidor TCP. O Stub lança Exception se for inválida.
-                stub.jogar(linha);
+                Element tabuleiro = stub.jogar(linha);
                 
-                out.print("{\"status\": \"ok\"}");
+                String xmlString = XMLDoc.documentToString(tabuleiro.getOwnerDocument());
+                String safeXml = xmlString.replace("\"", "\\\"").replace("\n", "").replace("\r", "");
+                
+                out.print("{\"status\": \"ok\", \"xml\": \"" + safeXml + "\"}");
             }
             else {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);

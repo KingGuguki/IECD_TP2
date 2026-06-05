@@ -51,7 +51,7 @@ public class Servidor {
         FIFOJogador fIFOJogador = filaGlobal;
 
         /**
-         * 🏗️ TAREFA DE EMPARELHAMENTO (Matchmaking)
+         * TAREFA DE EMPARELHAMENTO (Matchmaking)
          * Esta Thread corre em background para casar jogadores 2 a 2.
          */
         new Thread(() -> {
@@ -94,10 +94,7 @@ public class Servidor {
                     }
                 } catch (Exception e) {
                     System.out.println("❌ Erro na tarefa de gestão de fila.");
-<<<<<<< HEAD
-=======
                     e.printStackTrace();
->>>>>>> branch 'main' of https://github.com/KingGuguki/IECD_TP2.git
                 }
             }
         }).start();
@@ -233,10 +230,17 @@ public class Servidor {
                             }).start();
 
                             break; // Sai da thread do Lobby normal
+                        } else if (acao == 9) {
+                            // Desconexão silenciosa após pedido API único (ex: Atualizar Perfil)
+                            Skeleton.limparSocketUtilizador(element);
+                            try { element.close(); } catch (Exception e1) {}
+                            break; // Sai da thread do Lobby normal silenciosamente
                         }
                     }
                 } catch (Exception e) {
-                    System.out.println("⚠️ Jogador saiu do lobby: " + e.getMessage());
+                    String dNome = Skeleton.obterSocketUtilizador(element);
+                    String motivo = (e.getMessage() != null) ? e.getMessage() : "Desconexão da web";
+                    System.out.println("⚠️ Jogador [" + (dNome != null ? dNome : "Desconhecido") + "] saiu do lobby (" + motivo + ")");
                     Skeleton.limparSocketUtilizador(element);
                     try {
                         element.close();

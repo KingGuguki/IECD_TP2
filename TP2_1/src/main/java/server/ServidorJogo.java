@@ -53,7 +53,7 @@ class ServidorDedicado extends Thread {
         this.connectionO = connection2;
     }
 
-    private void atualizarEstatisticasFimJogo(JogoXML jogo, long duracaoSegundos) throws Exception {
+    private void atualizarEstatisticasFimJogo(JogoXML jogo, long tempoPensamentoX, long tempoPensamentoO) throws Exception {
         String userX = Skeleton.obterSocketUtilizador(connectionX);
         String userO = Skeleton.obterSocketUtilizador(connectionO);
 
@@ -62,14 +62,14 @@ class ServidorDedicado extends Thread {
         }
 
         if (jogo.empate()) {
-            User.registarResultadoJogo(userX, userO, null, true, duracaoSegundos);
+            User.registarResultadoJogo(userX, userO, null, true, tempoPensamentoX, tempoPensamentoO);
             return;
         }
 
         if ("VX".equals(jogo.getEstado()) || jogo.vitoria('X')) {
-            User.registarResultadoJogo(userX, userO, userX, false, duracaoSegundos);
+            User.registarResultadoJogo(userX, userO, userX, false, tempoPensamentoX, tempoPensamentoO);
         } else if ("VO".equals(jogo.getEstado()) || jogo.vitoria('O')) {
-            User.registarResultadoJogo(userX, userO, userO, false, duracaoSegundos);
+            User.registarResultadoJogo(userX, userO, userO, false, tempoPensamentoX, tempoPensamentoO);
         }
     }
 
@@ -84,6 +84,9 @@ class ServidorDedicado extends Thread {
      */
     public void run() {
         long inicioJogo = System.currentTimeMillis();
+        long tempoTurno = inicioJogo;
+        long tempoPensamentoX = 0;
+        long tempoPensamentoO = 0;
 
         try (
             // Cria streams para leitura e escrita de dados nos sockets
@@ -100,6 +103,13 @@ class ServidorDedicado extends Thread {
             // Stream para escrever dados no socket X.
             PrintWriter osO = new PrintWriter(connectionO.getOutputStream(), true);
         ) {
+            String userX = Skeleton.obterSocketUtilizador(connectionX);
+            String userO = Skeleton.obterSocketUtilizador(connectionO);
+            User uX = userX != null ? User._obtain(userX) : null;
+            User uO = userO != null ? User._obtain(userO) : null;
+            String corX = (uX != null && uX.getCorFundo() != null) ? uX.getCorFundo() : "#3b82f6";
+            String corO = (uO != null && uO.getCorFundo() != null) ? uO.getCorFundo() : "#f43f5e";
+
         	// Define timeout para inatvidade
         	connectionX.setSoTimeout(timeout);
         	connectionO.setSoTimeout(timeout);
@@ -122,29 +132,48 @@ class ServidorDedicado extends Thread {
                     {
                         // Ciclo para permitir múltiplos obter antes do jogar
                         while (true) {
-                            Document docX = Skeleton.getNext(isX);
+                            Document docX = Skeleton.getNext(isX, connectionX);
                             if (docX.getElementsByTagName("obter").getLength() > 0) {
                                 // Responde ao obter manualmente
-                                osX.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+                                Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                             } else if (docX.getElementsByTagName("jogar").getLength() > 0) {
                                 // Extrai e executa a jogada
                                 Element jogada = (Element) docX.getElementsByTagName("jogar").item(0);
                                 short jogadaNum = Short.parseShort(jogada.getAttribute("jogada"));
+                                
+                                long agora = System.currentTimeMillis();
+                                tempoPensamentoX += (agora - tempoTurno);
+                                tempoTurno = agora;
+                                
                                 jogo.joga(jogadaNum, 'X');
-                                osX.println("<metodo><jogar>" + jogo.tabuleiroToXML() + "</jogar></metodo>");
+                                char proximoTurno = turnoAtual;
+                                if (!jogo.terminou() && jogo.getEstado().equals("ND")) {
+                                    proximoTurno = 'O';
+                                }
+                                Skeleton.printAndLog(osX, connectionX, "<metodo><jogar>" + jogo.tabuleiroToXML(proximoTurno, corX, corO) + "</jogar></metodo>");
+                                
+                                turnoAtual = proximoTurno;
+                                
+                                // Se o X teve bónus, ele continua a jogar. Mas o Oponente (O) que está à espera no obter precisa de receber o tabuleiro atualizado!
+                                if (jogo.terminou()) {
+                                    // Notifica o O que o jogo acabou (pois foi o X a jogar)
+                                    if (isO.ready()) Skeleton.getNext(isO, connectionO);
+                                    Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                    break;
+                                } else if (turnoAtual == 'X') {
+                                    // Responde ao O imediatamente para ele ver a caixa fechada sem ter de mudar o turno!
+                                    if (isO.ready()) {
+                                        Skeleton.getNext(isO, connectionO); // consome o pedido de obter pendente
+                                    }
+                                    Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                }
                                 break;
                             } else {
                                 throw new Exception("Comando inválido esperado: obter ou jogar");
                             }
                         }
                         
-                        if (!jogo.terminou()) 
-                        {
-                            if (jogo.getEstado().equals("ND")) {
-                                turnoAtual = 'O';
-                            }
-                        } 
-                        else 
+                        if (jogo.terminou()) 
                         {
                             break;
                         }
@@ -152,45 +181,66 @@ class ServidorDedicado extends Thread {
                     else 
                     {
                         while (true) {
-                            Document docO = Skeleton.getNext(isO);
+                            Document docO = Skeleton.getNext(isO, connectionO);
                             if (docO.getElementsByTagName("obter").getLength() > 0) {
-                                osO.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+                                Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                             } else if (docO.getElementsByTagName("jogar").getLength() > 0) {
                                 Element jogada = (Element) docO.getElementsByTagName("jogar").item(0);
                                 short jogadaNum = Short.parseShort(jogada.getAttribute("jogada"));
+                                
+                                long agora = System.currentTimeMillis();
+                                tempoPensamentoO += (agora - tempoTurno);
+                                tempoTurno = agora;
+                                
                                 jogo.joga(jogadaNum, 'O');
-                                osO.println("<metodo><jogar>" + jogo.tabuleiroToXML() + "</jogar></metodo>");
+                                char proximoTurno = turnoAtual;
+                                if (!jogo.terminou() && jogo.getEstado().equals("ND")) {
+                                    proximoTurno = 'X';
+                                }
+                                Skeleton.printAndLog(osO, connectionO, "<metodo><jogar>" + jogo.tabuleiroToXML(proximoTurno, corX, corO) + "</jogar></metodo>");
+                                
+                                turnoAtual = proximoTurno;
+                                
+                                if (jogo.terminou()) {
+                                    // Notifica o X que o jogo acabou (pois foi o O a jogar)
+                                    if (isX.ready()) Skeleton.getNext(isX, connectionX);
+                                    Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                    break;
+                                } else if (turnoAtual == 'O') {
+                                    // Responde ao X imediatamente para ele ver a caixa fechada sem ter de mudar o turno!
+                                    if (isX.ready()) {
+                                        Skeleton.getNext(isX, connectionX); // consome o pedido de obter pendente
+                                    }
+                                    Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
+                                }
                                 break;
                             } else {
                                 throw new Exception("Comando inválido esperado: obter ou jogar");
                             }
                         }
-                        
-                        if (!jogo.terminou()) 
-                        {
-                            if (jogo.getEstado().equals("ND")) {
-                                turnoAtual = 'X';
-                            }
-                        } 
-                        else 
-                        {
-                            break;
-                        }
                     }
                 } // Fim do for (;;)
-                long duracaoSegundos = (System.currentTimeMillis() - inicioJogo) / 1000;
-                atualizarEstatisticasFimJogo(jogo, duracaoSegundos);
+                atualizarEstatisticasFimJogo(jogo, tempoPensamentoX / 1000, tempoPensamentoO / 1000);
             } catch (java.net.SocketTimeoutException timeoutEx) {
                 System.out.println("Servidor dedicado: Timeout atingido por inatividade de um jogador (" + turnoAtual + ")!");
+                
+                long agora = System.currentTimeMillis();
                 if (turnoAtual == 'X') {
+                    tempoPensamentoX += (agora - tempoTurno);
                     jogo.setEstado("VO"); // Vitória do O porque o X adormeceu
-                    Skeleton.runNotificarTimeout(osO, jogo);
+                    Skeleton.runNotificarTimeout(osO, connectionO, jogo);
+                    // Avisar o X também
+                    if (isX.ready()) Skeleton.getNext(isX, connectionX);
+                    Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
                 } else {
+                    tempoPensamentoO += (agora - tempoTurno);
                     jogo.setEstado("VX"); // Vitória do X porque o O adormeceu
-                    Skeleton.runNotificarTimeout(osX, jogo);
+                    Skeleton.runNotificarTimeout(osX, connectionX, jogo);
+                    // Avisar o O também
+                    if (isO.ready()) Skeleton.getNext(isO, connectionO);
+                    Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
                 }
-                long duracaoSegundos = (System.currentTimeMillis() - inicioJogo) / 1000;
-                atualizarEstatisticasFimJogo(jogo, duracaoSegundos);
+                atualizarEstatisticasFimJogo(jogo, tempoPensamentoX / 1000, tempoPensamentoO / 1000);
             } catch (Exception e) {
                 System.out.println("⚠️ Jogo interrompido: " + e.getMessage());
             }
@@ -204,5 +254,5 @@ class ServidorDedicado extends Thread {
             Servidor.devolverAoLobby(connectionO);
 		}
 		System.out.println("Servidor dedicado: terminou a Thread ("+ this.threadId()+") do servidor dedicado!");
-	} // fim run
-} // end Servidor Dedicado
+	}
+}

@@ -1683,7 +1683,7 @@ public class User {
         return incrementarEstatistica(username, campo, 1);
     }
 
-    public static synchronized void registarResultadoJogo(String jogador1, String jogador2, String vencedor, boolean empate, long duracaoSegundos) throws Exception {
+    public static synchronized void registarResultadoJogo(String jogador1, String jogador2, String vencedor, boolean empate, long tempoPensamento1, long tempoPensamento2) throws Exception {
 	boolean alterou = false;
         
         if (empate) {
@@ -1704,10 +1704,10 @@ public class User {
         }
         
         if (jogador1 != null && !jogador1.isBlank()) {
-            alterou = incrementarEstatistica(jogador1, "tempo", (int) duracaoSegundos) || alterou;
+            alterou = incrementarEstatistica(jogador1, "tempo", (int) tempoPensamento1) || alterou;
         }
         if (jogador2 != null && !jogador2.isBlank()) {
-            alterou = incrementarEstatistica(jogador2, "tempo", (int) duracaoSegundos) || alterou;
+            alterou = incrementarEstatistica(jogador2, "tempo", (int) tempoPensamento2) || alterou;
         }
 
 	if (alterou) {

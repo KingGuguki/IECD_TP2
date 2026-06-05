@@ -192,6 +192,11 @@
                         ? "<img src='data:image/jpeg;base64," + p.photo + "' class='avatar'>" 
                         : "<div class='avatar'>" + p.username.charAt(0).toUpperCase() + "</div>";
                         
+                    let flagHtml = ""; 
+                    if (p.isoCode && p.isoCode.length === 2) {
+                        flagHtml = "<img src='https://flagcdn.com/w20/" + p.isoCode.toLowerCase() + ".png' alt='" + p.isoCode + "' style='vertical-align: middle; margin-right: 5px; box-shadow: 0 0 2px rgba(0,0,0,0.5);'>";
+                    }
+
                     html += "<tr>" +
                             "<td class='rank " + rankClass + "'>" + rankIcon + "</td>" +
                             "<td>" +
@@ -199,7 +204,7 @@
                                     avatarHtml +
                                     "<div>" +
                                         "<strong>" + p.username + "</strong><br>" +
-                                        "<span style='font-size:0.85rem; color:var(--muted)'>" + (p.nationality || 'Desconhecida') + "</span>" +
+                                        "<span style='font-size:0.85rem; color:var(--muted)'>" + flagHtml + (p.nationality || 'Desconhecida') + "</span>" +
                                     "</div>" +
                                 "</div>" +
                             "</td>" +

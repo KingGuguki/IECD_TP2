@@ -80,7 +80,10 @@
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="jogarType">
-		<xs:attribute type="jogadaType" name="jogada" use="required">
+		<xs:sequence>
+			<xs:element type="tabuleiroType" name="tabuleiro" minOccurs="0"/>
+		</xs:sequence>
+		<xs:attribute type="jogadaType" name="jogada" use="optional">
 			<xs:annotation>
 				<xs:documentation>Assinala jogada realizada (entre 1 e 12).
 				</xs:documentation>
@@ -183,6 +186,9 @@
         <xs:attribute type="estadoType" name="estado" use="required" />
         <xs:attribute name="linhas" type="xs:integer" use="optional" />
         <xs:attribute name="colunas" type="xs:integer" use="optional" />
+        <xs:attribute name="vez" type="xs:string" use="optional" />
+        <xs:attribute name="corX" type="xs:string" use="optional" />
+        <xs:attribute name="corO" type="xs:string" use="optional" />
     </xs:complexType>
 	<xs:complexType name="atualizarPerfilType">
 		<xs:attribute name="nickname" type="xs:string" use="required"/>

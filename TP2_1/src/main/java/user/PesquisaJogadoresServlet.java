@@ -36,6 +36,9 @@ public class PesquisaJogadoresServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         out.print("[");
         
+        String me = (String) request.getSession().getAttribute("tp2_username");
+        if (me == null) me = "";
+        
         try {
             // Garantir que a base de dados está carregada/sincronizada
             try {
@@ -60,7 +63,7 @@ public class PesquisaJogadoresServlet extends HttpServlet {
                     String nationality = getElementText(u, "nationality");
                     String blockedStr = getElementText(u, "blocked");
                     
-                    if ("true".equalsIgnoreCase(blockedStr)) {
+                    if ("true".equalsIgnoreCase(blockedStr) || username.equals(me)) {
                         continue;
                     }
 
@@ -71,17 +74,23 @@ public class PesquisaJogadoresServlet extends HttpServlet {
                         if (!photo.isEmpty() && !photo.startsWith("data:image/")) {
                             photo = "data:image/jpeg;base64," + photo;
                         }
+                        
+                        String cor = getElementText(u, "cor");
+                        if (cor.isEmpty()) {
+                            cor = "#0F172A"; // Cor padrão caso não exista
+                        }
 
                         if (!first) {
                             out.print(",");
                         }
                         first = false;
 
-                        out.printf("{\"username\":\"%s\", \"fullName\":\"%s\", \"nationality\":\"%s\", \"photo\":\"%s\"}", 
+                        out.printf("{\"username\":\"%s\", \"fullName\":\"%s\", \"nationality\":\"%s\", \"photo\":\"%s\", \"color\":\"%s\"}", 
                             escapeJson(username), 
                             escapeJson(fullName),
                             escapeJson(nationality),
-                            escapeJson(photo));
+                            escapeJson(photo),
+                            escapeJson(cor));
                     }
                 }
             }

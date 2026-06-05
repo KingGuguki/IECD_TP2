@@ -16,11 +16,14 @@ public class JogoXML extends Jogo
     /**
      * Converte o tabuleiro do jogo para XML e inclui o estado.
      *
-     * @return String com XML que representa o tabuleiro.
      */
-    public String tabuleiroToXML() 
+    public String tabuleiroToXML() {
+        return tabuleiroToXML('X', "#3b82f6", "#f43f5e");
+    }
+
+    public String tabuleiroToXML(char turnoAtual, String corX, String corO) 
     {
-        String tab = "<tabuleiro estado='" + estado + "' linhas='" + pontosLinhas + "' colunas='" + pontosColunas + "' >";
+        String tab = "<tabuleiro estado='" + estado + "' linhas='" + pontosLinhas + "' colunas='" + pontosColunas + "' vez='" + turnoAtual + "' corX='" + corX + "' corO='" + corO + "' >";
         
         for (int i = 0; i < pontosLinhas; i++) 
         {

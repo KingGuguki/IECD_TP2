@@ -3,7 +3,7 @@
 <%
     String username = (String) session.getAttribute("tp2_username");
     if (username == null) {
-        response.sendRedirect("login.html");
+        response.sendRedirect("login.jsp");
         return;
     }
 
@@ -260,6 +260,18 @@
                 const linhasCnt = parseInt(tabuleiro.getAttribute("linhas"));
                 const colunasCnt = parseInt(tabuleiro.getAttribute("colunas"));
                 const estado = tabuleiro.getAttribute("estado");
+                const vez = tabuleiro.getAttribute("vez");
+                const corX = tabuleiro.getAttribute("corX") || "#3b82f6";
+                const corO = tabuleiro.getAttribute("corO") || "#f43f5e";
+                
+                // Atualiza cores dinamicamente
+                if (mySymbol === "X") {
+                    document.documentElement.style.setProperty("--accent", corX);
+                    document.documentElement.style.setProperty("--enemy", corO);
+                } else if (mySymbol === "O") {
+                    document.documentElement.style.setProperty("--accent", corO);
+                    document.documentElement.style.setProperty("--enemy", corX);
+                }
                 
                 boardEl.style.width = ((colunasCnt - 1) * CELL_SIZE) + "px";
                 boardEl.style.height = ((linhasCnt - 1) * CELL_SIZE) + "px";
@@ -267,11 +279,25 @@
                 if (estado.startsWith("V") || estado === "EM") {
                     isGameOver = true;
                     stopTimer();
+                    boardEl.style.pointerEvents = "none";
+                    boardEl.style.opacity = "0.7";
                     statusEl.className = "status-bar " + (estado === "EM" ? "status-draw" : (estado.charAt(1) === mySymbol ? "status-win" : "status-lose"));
                     if (estado === "EM") {
                         statusEl.innerHTML = "🤝 Empate!";
+                    } else if (estado.charAt(1) === mySymbol) {
+                        const todasLinhasOcupadas = Array.from(xmlDoc.getElementsByTagName("linha")).every(l => l.getAttribute("ocupada") === "true");
+                        if (todasLinhasOcupadas) {
+                            statusEl.innerHTML = "🎉 Vitória!";
+                        } else {
+                            statusEl.innerHTML = "🎉 Vitória por desistência (Tempo)!";
+                        }
                     } else {
-                        statusEl.innerHTML = estado.charAt(1) === mySymbol ? "🎉 Vitória!" : "💀 Derrota por tempo ou linhas fechadas!";
+                        const todasLinhasOcupadas = Array.from(xmlDoc.getElementsByTagName("linha")).every(l => l.getAttribute("ocupada") === "true");
+                        if (todasLinhasOcupadas) {
+                            statusEl.innerHTML = "💀 Derrota!";
+                        } else {
+                            statusEl.innerHTML = "⏱️ Derrota por tempo!";
+                        }
                     }
                     document.getElementById("btnVoltarLobby")?.removeAttribute("style");
                 }
@@ -329,11 +355,26 @@
                 }
                 
                 boardEl.innerHTML = newHTML;
+                
+                if (!isGameOver && vez) {
+                    window.currentTurn = vez;
+                    if (vez === mySymbol) {
+                        startTimer();
+                        boardEl.style.pointerEvents = "auto";
+                        boardEl.style.opacity = "1";
+                    } else {
+                        stopTimer();
+                        statusEl.innerHTML = "A aguardar jogada do adversário... (máx 30s)";
+                        boardEl.style.pointerEvents = "none";
+                        boardEl.style.opacity = "0.7";
+                    }
+                }
             }
 
             // Função global para o clique
             window.fazerJogada = function(linhaId) {
                 if (isGameOver) return;
+                if (window.currentTurn && window.currentTurn !== mySymbol) return;
                 
                 // Mostrar feedback visual imediato de que a jogada foi enviada
                 statusEl.innerHTML = "<span style='color:var(--muted)'>A enviar jogada " + linhaId + "...</span>";
@@ -341,7 +382,16 @@
                 fetch("game?action=jogar&linha=" + linhaId, { method: "POST" })
                     .then(r => r.json())
                     .then(data => {
-                        if (data.status === "ok") {
+                        if (data.status === "ok" && data.xml) {
+                            const xmlDoc = parseXML(data.xml);
+                            updateBoard(xmlDoc);
+                            
+                            // Se o turno passou para o adversário, iniciamos o long-polling para escutar a resposta dele!
+                            if (window.currentTurn !== mySymbol && !isGameOver) {
+                                fetchEstado(); 
+                            }
+                        } else if (data.status === "ok") {
+                            // Fallback caso venha sem xml por algum motivo
                             stopTimer();
                             statusEl.innerHTML = "A aguardar jogada do adversário... (máx 30s)";
                             fetchEstado(); 
@@ -362,14 +412,14 @@
                 fetch("game?action=estado")
                     .then(r => r.json())
                     .then(data => {
-                        if (data.status === "ok") {
+                        if (data.status === "ok" && data.xml) {
                             const xmlDoc = parseXML(data.xml);
                             updateBoard(xmlDoc);
                             
-                            // Se o jogo não terminou e não fomos nós que acabámos de jogar, 
-                            // a atualização do tabuleiro significa que o nosso turno CHEGOU!
-                            if (!isGameOver) {
-                                startTimer();
+                            // O servidor respondeu ao nosso Long Polling. 
+                            // Se ainda não for a nossa vez (ex: o adversário fez uma jogada extra e o servidor só nos mandou o estado atualizado), temos de reiniciar o Long Polling!
+                            if (window.currentTurn !== mySymbol && !isGameOver) {
+                                fetchEstado();
                             }
                         } else {
                             statusEl.innerHTML = "Erro no servidor: " + data.error;
@@ -461,13 +511,15 @@
                             const item = document.createElement("div");
                             item.className = "suggestion-item";
                             
+                            const playerColor = player.color || 'var(--accent)';
+
                             // Photo or placeholder
                             let photoHtml = "";
                             if (player.photo && player.photo.trim().length > 0) {
-                                photoHtml = '<img src="' + player.photo + '" class="suggestion-photo" alt="' + player.username + '">';
+                                photoHtml = '<img src="' + player.photo + '" class="suggestion-photo" alt="' + player.username + '" style="border: 2px solid ' + playerColor + '; box-shadow: 0 0 8px ' + playerColor + '40;">';
                             } else {
                                 const initials = player.username.substring(0, 2).toUpperCase();
-                                photoHtml = '<div class="suggestion-placeholder">' + initials + '</div>';
+                                photoHtml = '<div class="suggestion-placeholder" style="border: 2px solid ' + playerColor + '; box-shadow: 0 0 8px ' + playerColor + '40;">' + initials + '</div>';
                             }
 
                             item.innerHTML = 

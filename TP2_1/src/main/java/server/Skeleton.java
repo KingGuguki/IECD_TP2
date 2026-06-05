@@ -63,21 +63,30 @@ public class Skeleton {
     }
     
     // Lê a próxima linha/mensagem e devolve num Document
-    public static Document getNext(BufferedReader is) throws Exception {
-	// Lê a linha que contém a mensagem.
-    	String line=is.readLine();
-    	registaLog("Servidor{"+line+"}");
+    public static Document getNext(BufferedReader is, Socket sk) throws Exception {
+        String line = is.readLine();
+        if (line == null) return null;
+        
+        registaLog("Servidor{"+line+"}");
         Document d = XMLDoc.parseString(line); 
-        // Valida o schema XSD da mensagem.
+
         validXSD(d);
         return d;
+    }
+    
+    // --- AUDITORIA ---
+    public static void printAndLog(PrintWriter os, Socket sk, String msg) {
+        try {
+            registaLog("Servidor{" + msg + "}");
+        } catch (Exception e) {}
+        os.println(msg);
     }
     
     public static int runLobby(Socket sk) throws Exception {
         BufferedReader is = new BufferedReader(new InputStreamReader(sk.getInputStream()));
         PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         
-        Document x = getNext(is); 
+        Document x = getNext(is, sk); 
         
         if (x.getElementsByTagName("iniciar").getLength() > 0) {
             System.out.println("   -> Recebido pedido de LOGIN...");
@@ -92,7 +101,7 @@ public class Skeleton {
                     + "' senha='" + xmlAttribute(Senha) + "'/></metodo>");
             
             registarSocketUtilizador(sk, Nome);
-            os.println(XMLDoc.documentToString(respostaDoc));
+            printAndLog(os, sk, XMLDoc.documentToString(respostaDoc));
             return 0; // continue no lobby
         } 
         else if (x.getElementsByTagName("registar").getLength() > 0) {
@@ -116,7 +125,7 @@ public class Skeleton {
                     + "' senha='" + xmlAttribute(senha) + "'/></metodo>");
             
             registarSocketUtilizador(sk, nick);
-            os.println(XMLDoc.documentToString(respostaDoc));
+            printAndLog(os, sk, XMLDoc.documentToString(respostaDoc));
             return 0; // continue no lobby
         } 
         else if (x.getElementsByTagName("atualizar_perfil").getLength() > 0) {
@@ -140,8 +149,9 @@ public class Skeleton {
             User._save();
             User._load();
 
-            os.println(XMLDoc.documentToString(x));
-            return 0; // continue no lobby
+            registarSocketUtilizador(sk, nick);
+            printAndLog(os, sk, XMLDoc.documentToString(x));
+            return 9; // action: disconnect silently
         } 
         else if (x.getElementsByTagName("entrar_fila").getLength() > 0) {
             System.out.println("   -> Recebido pedido de ENTRAR NA FILA...");
@@ -159,9 +169,9 @@ public class Skeleton {
             boolean isInvited = Servidor.convitesPendentes.containsKey(eu);
             if (isInvited) {
                 String inviter = Servidor.convitesPendentes.get(eu);
-                os.println("<metodo><verificar_convites><convite de='" + xmlAttribute(inviter) + "'/></verificar_convites></metodo>");
+                printAndLog(os, sk, "<metodo><verificar_convites><convite de='" + xmlAttribute(inviter) + "'/></verificar_convites></metodo>");
             } else {
-                os.println("<metodo><verificar_convites/></metodo>");
+                printAndLog(os, sk, "<metodo><verificar_convites/></metodo>");
             }
             return 0; // continue in lobby
         }
@@ -187,7 +197,7 @@ public class Skeleton {
         Node cloneElement = respostaDoc.importNode(jogadorNode, true);
         respostaDoc.getElementsByTagName("entrar_fila").item(0).appendChild(cloneElement);
         
-        os.println(XMLDoc.documentToString(respostaDoc));
+        printAndLog(os, sk, XMLDoc.documentToString(respostaDoc));
     }
 	/**
 	 * Método que atende a chamada Iniciar.
@@ -202,7 +212,7 @@ public class Skeleton {
 	// Stream para escrever dados no socket.
 	PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         System.out.println("   Jogador '"+simbolo+"': "+sk);
-        Document x = getNext(is);
+        Document x = getNext(is, sk);
         // Trata o jogador
         // Extrai o nome e senha do jogador X.
         String Nome 	= 	getMethod(x,"iniciar").getAttribute("nickname");
@@ -219,7 +229,7 @@ public class Skeleton {
         // Envia a mensagem de "iniciar" para o jogador, 
         // com o seu símbolo que confirma o login bem sucedido.
         String msg=XMLDoc.documentToString(x);
-        os.println(msg);
+        printAndLog(os, sk, msg);
     }
     
     public static void runRegistar(Socket sk, char simbolo) throws Exception {
@@ -229,7 +239,7 @@ public class Skeleton {
         
         // 2. Ler a mensagem XML enviada pelo Stub (<metodo><registar .../></metodo>)
         // O getNext já faz a validação contra o metodos-srv.xsd!
-        Document x = getNext(is); 
+        Document x = getNext(is, sk); 
         
         // 3. Extrair o elemento "registar" e os seus atributos
         // Usamos o método auxiliar getMethod que já existe no teu Skeleton
@@ -266,7 +276,7 @@ public class Skeleton {
         
         // 6. Enviar o XML final de volta para o Stub
         String msgResposta = XMLDoc.documentToString(x);
-        os.println(msgResposta);
+        printAndLog(os, sk, msgResposta);
     }
     
     
@@ -275,7 +285,7 @@ public class Skeleton {
         PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         
         // 1. Receber e validar a mensagem XML
-        Document x = getNext(is); 
+        Document x = getNext(is, sk); 
         Element req = (Element) x.getElementsByTagName("atualizar_perfil").item(0);
         
         // 2. Extrair os dados
@@ -297,7 +307,7 @@ public class Skeleton {
             User._save();
             User._load();
             // Enviar uma mensagem de sucesso de volta ao cliente
-            os.println("<metodo><resposta estado='OK'>Perfil atualizado com sucesso!</resposta></metodo>");
+            printAndLog(os, sk, "<metodo><resposta estado='OK'>Perfil atualizado com sucesso!</resposta></metodo>");
         } else {
             // Se retornar false, provavelmente o utilizador não existe
             throw new Exception("Não foi possível atualizar a fotografia do utilizador '" + nick + "'.");
@@ -330,21 +340,21 @@ public class Skeleton {
 	 * @throws Exception 	em caso de erro
 	 */
     public static void runObter(BufferedReader is, PrintWriter os, char simbolo, Socket sk, JogoXML jogo) throws Exception {
-        Document obter = getNext(is);
+        Document obter = getNext(is, sk);
         
         // Verifica a existencia do elemento "obter" na mensagem.
         getMethod(obter, "obter");
 
         // Envia a mensagem "obter" para o jogador, 
         // com o tabuleiro atualizado indicando o estado atual do jogo.
-        os.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+        printAndLog(os, sk, "<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
     }
     
     /**
      * Envia o estado atual do jogo (usualmente uma derrota por timeout) sem esperar pelo pedido "obter"
      */
-    public static void runNotificarTimeout(PrintWriter os, JogoXML jogo) throws Exception {
-        os.println("<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
+    public static void runNotificarTimeout(PrintWriter os, Socket sk, JogoXML jogo) throws Exception {
+        printAndLog(os, sk, "<metodo><obter>" + jogo.tabuleiroToXML() + "</obter></metodo>");
     }
 	/**
 	 * Método que atende a chamada Jogar.
@@ -357,7 +367,7 @@ public class Skeleton {
 	 * @throws Exception 	em caso de erro
 	 */
     public static JogoXML runJogar(BufferedReader is, PrintWriter os, char simbolo, Socket sk, JogoXML jogo) throws Exception {
-        Document jogar = getNext(is);
+        Document jogar = getNext(is, sk);
 
         // Obtém o elemento "jogar" da mensagem.
         Element jogada = getMethod(jogar, "jogar");
@@ -370,7 +380,7 @@ public class Skeleton {
         jogo.joga(jogadaNum, simbolo);
 
         // Envia a mesma mensagem recebida como resposta "jogar" para o jogador.
-        os.println(XMLDoc.documentToString(jogar));   	
+        printAndLog(os, sk, XMLDoc.documentToString(jogar));   	
     	return jogo;
     }
     /**

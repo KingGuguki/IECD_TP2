@@ -55,7 +55,7 @@
     Stub stub = (Stub) session.getAttribute("tp2_stub");
 
     if (username == null || simbolo == null || socket == null || stub == null) {
-        response.sendRedirect("jogador.jsp");
+        response.sendRedirect("login.jsp");
         return;
     }
 
@@ -76,7 +76,7 @@
         User._load();
         jogador = User._obtain(username);
     } catch (Exception e) {
-        response.sendRedirect("jogador.jsp");
+        response.sendRedirect("login.jsp");
         return;
     }
 
@@ -386,7 +386,7 @@
                     </div>
                     <div>
                         <p style="margin:0; color: var(--text);">Escolhe uma nova fotografia</p>
-                        <p style="margin:4px 0 0;">A imagem é convertida para Base64 no navegador.</p>
+                        <p style="margin:4px 0 0;">Tamanho máximo: 2MB</p>
                     </div>
                 </div>
 
@@ -418,6 +418,13 @@
         inputFoto.addEventListener('change', function () {
             const file = this.files && this.files[0];
             if (!file) {
+                return;
+            }
+
+            // O limite nativo do Tomcat para o POST é 2MB (2097152 bytes)
+            if (file.size > 2097152) {
+                alert("A imagem é demasiado grande! O limite máximo é de 2MB.");
+                this.value = ""; // Limpa a seleção
                 return;
             }
 
