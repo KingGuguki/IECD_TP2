@@ -50,11 +50,8 @@
     XMLDoc.setContextoReal(getServletContext().getRealPath("/"));
 
     String username = (String) session.getAttribute("tp2_username");
-    String simbolo = (String) session.getAttribute("tp2_simbolo");
-    Socket socket = (Socket) session.getAttribute("tp2_socket");
-    Stub stub = (Stub) session.getAttribute("tp2_stub");
 
-    if (username == null || simbolo == null || socket == null || stub == null) {
+    if (username == null || username.isBlank()) {
         response.sendRedirect("login.jsp");
         return;
     }
