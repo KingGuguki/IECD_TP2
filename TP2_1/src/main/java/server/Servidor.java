@@ -36,13 +36,15 @@ public class Servidor {
         int port = DEFAULT_PORT;
 
         // 📝 Processamento de argumentos da linha de comandos
-        if (args.length >= 1)
+        if (args.length >= 1) {
             port = Integer.parseInt(args[0]);
-        if (args.length >= 2)
+        }
+        if (args.length >= 2) {
             single = args[1].equalsIgnoreCase("S");
-        if (args.length >= 3)
+        }
+        if (args.length >= 3) {
             timeout = Integer.parseInt(args[2]);
-
+        }
         // 📢 Logs de inicialização para o administrador do sistema
         System.out.println(single ? "⚠️ Modo: Jogo Único" : "🔄 Modo: Multi-Jogo");
 
