@@ -1458,10 +1458,10 @@
         <nationality>PT</nationality>
         <cor>#680075</cor>
         <password>a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3</password>
-        <vitorias>2</vitorias>
+        <vitorias>3</vitorias>
         <derrotas>0</derrotas>
         <empates>0</empates>
-        <tempo>37</tempo>
+        <tempo>48</tempo>
     </user>
     <user>
         <userid>2154da01-cb72-4092-b3ec-c1bd293e8de0</userid>
@@ -1479,9 +1479,9 @@
         <cor>#FF0000</cor>
         <password>a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3</password>
         <vitorias>0</vitorias>
-        <derrotas>1</derrotas>
+        <derrotas>2</derrotas>
         <empates>0</empates>
-        <tempo>6</tempo>
+        <tempo>14</tempo>
     </user>
     <user>
         <userid>aab2720a-cca6-4bf3-9362-daccd02d6be3</userid>
