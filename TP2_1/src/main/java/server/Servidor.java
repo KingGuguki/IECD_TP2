@@ -136,7 +136,7 @@ public class Servidor {
 
     /**
      * 🧵 Classe interna para gerir a fila de jogadores (First-In, First-Out).
-     * Usa uma BlockingQueue para garantir segurança entre threads (Thread-Safe).
+     * Usa uma BlockingQueue para garantir segurança entre threads
      */
     private final class FIFOJogador {
         // 🧱 Fila que bloqueia a leitura se estiver vazia e a escrita se estiver cheia
@@ -158,8 +158,7 @@ public class Servidor {
                         if (acao == 1) { // Entrar na fila publica
                             String username = Skeleton.obterSocketUtilizador(element);
 
-                            // 🌟 INTERCEÇÃO PARA JOGADORES DE CONSOLA OU ACEITAÇÕES 🌟
-                            // Se este jogador tiver um convite pendente para ele, intercetamos!
+                            // Se este jogador tiver um convite pendente para ele, intercetamos
                             if (username != null) {
                                 String inviter = convitesPendentes.remove(username);
                                 if (inviter != null) {
@@ -183,7 +182,7 @@ public class Servidor {
                                         Skeleton.sendEntrarFilaResponse(skX, 'X');
                                         Skeleton.sendEntrarFilaResponse(skO, 'O');
 
-                                        // Arranca logo com a thread dedicada!
+                                        // Arranca logo com a thread dedicada
                                         ServidorDedicado sd = new ServidorDedicado(skX, skO);
                                         sd.start();
                                         break; // Sai do lobby
@@ -197,7 +196,7 @@ public class Servidor {
                             String username = Skeleton.obterSocketUtilizador(element);
                             esperaVIP.put(username, element);
 
-                            // Lança uma thread para vigiar se este socket envia cancelar!
+                            // Lança uma thread para vigiar se este socket envia cancelar
                             new Thread(() -> {
                                 try {
                                     element.setSoTimeout(500); // Para poder sair do ciclo se esperaVIP remover

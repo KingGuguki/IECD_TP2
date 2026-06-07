@@ -1902,22 +1902,3 @@ public class User {
 	menu();
     }
 }
-
-/*
- * Resumo dos utilizadores configurados
- * "('cartwheel','p1','Santiago','Castro Pacheco','San.Pacheco@mail.pt')"
- * "('milkshake','p2','Veríssimo','Simões Silvestre','Ver.Silvestre@mail.us')"
- * "('cranberry','p3','Ismael','Cravo Abril','Ism.Abril@mail.es')"
- * "('gandalf','p4','Camilo','Rosa Braga','Cam.Braga@mail.es')"
- * "('opera','p5','Gustavo','Pascoal Pires','Gus.Pires@mail.fr')"
- * "('pegasus','p6','Odilon','Nogueira Dantas','Od.Dantas@mail.it')"
- * "('deneb','p7','Olga','Faria Luz','Ol.Luz@bustayes.com')"
- * "('luzkira','p8','Luzia','Gilda Reis','Luz.Reis@mail.pt')"
- * "('smoke','p9','Felicidade','Varejão Amaral','Fel.Amaral@mail.es')"
- * "('bagel','p10','Luísa','Carriço d''Almeida','Lu.Almeida@mail.es')"
- * "('rush','p11','Natacha','Caetano Prego','Nat.Prego@mail.es')"
- * "('bird','p12','Isabela','Peres da Ponte','Isa.Ponte@mail.pt')"
- * "('robotik','p13','Engracia','Gwyther Ximenez','egwyther0@redcross.org','F')"
- * "('daybreak','p14','Marielle','Bonicelli MacNeachtain','mbonicelli2@sitemeter.com','F')"
- * "('astroboy','p15','Blakelee','Wilcot Watkinson','bwilcot4@twitpic.com','M')"
- */

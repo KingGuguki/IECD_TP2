@@ -154,14 +154,14 @@ class ServidorDedicado extends Thread {
                                 
                                 turnoAtual = proximoTurno;
                                 
-                                // Se o X teve bónus, ele continua a jogar. Mas o Oponente (O) que está à espera no obter precisa de receber o tabuleiro atualizado!
+                                // Se o X teve bónus, ele continua a jogar. Mas o Oponente (O) que está à espera no obter precisa de receber o tabuleiro atualizado
                                 if (jogo.terminou()) {
                                     // Notifica o O que o jogo acabou (pois foi o X a jogar)
                                     if (isO.ready()) Skeleton.getNext(isO, connectionO);
                                     Skeleton.printAndLog(osO, connectionO, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                                     break;
                                 } else if (turnoAtual == 'X') {
-                                    // Responde ao O imediatamente para ele ver a caixa fechada sem ter de mudar o turno!
+                                    // Responde ao O imediatamente para ele ver a caixa fechada sem ter de mudar o turno
                                     if (isO.ready()) {
                                         Skeleton.getNext(isO, connectionO); // consome o pedido de obter pendente
                                     }
@@ -210,7 +210,7 @@ class ServidorDedicado extends Thread {
                                     Skeleton.printAndLog(osX, connectionX, "<metodo><obter>" + jogo.tabuleiroToXML(turnoAtual, corX, corO) + "</obter></metodo>");
                                     break;
                                 } else if (turnoAtual == 'O') {
-                                    // Responde ao X imediatamente para ele ver a caixa fechada sem ter de mudar o turno!
+                                    // Responde ao X imediatamente para ele ver a caixa fechada sem ter de mudar o turno
                                     if (isX.ready()) {
                                         Skeleton.getNext(isX, connectionX); // consome o pedido de obter pendente
                                     }
@@ -254,7 +254,7 @@ class ServidorDedicado extends Thread {
 			System.out.println("Servidor dedicado: terminou o jogo ("+e.getMessage()+")!");
 			// e.printStackTrace();
 		} finally {
-            // Em vez de descartar as ligações e forçar logout, devolvemo-las à escuta do Lobby!
+            // Em vez de descartar as ligações e forçar logout, devolvemo-las à scuta do Lobby
             // Isto preserva a sessão de ambos os jogadores intacta, mantendo-os logados.
             Servidor.devolverAoLobby(connectionX);
             Servidor.devolverAoLobby(connectionO);

@@ -87,7 +87,6 @@ public class HallOfFameServlet extends HttpServlet {
                 }
             });
             
-            // Generate JSON array manually (since standard libraries like Gson may not be available)
             StringBuilder json = new StringBuilder();
             json.append("[");
             for (int i = 0; i < ranking.size(); i++) {

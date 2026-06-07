@@ -95,7 +95,7 @@ public class PesquisaJogadoresServlet extends HttpServlet {
                 }
             }
         } catch (Exception e) {
-            // Se houver erro retorna um JSON vazio válido "[]"
+            // Se houver erro retorna um JSON vazio
         }
         
         out.print("]");

@@ -177,7 +177,6 @@ public class Skeleton {
         }
         else if (x.getElementsByTagName("aceitar_desafio").getLength() > 0) {
             System.out.println("   -> Recebido pedido de ACEITAR DESAFIO...");
-            // O aceitar_desafio equivale a entrar na fila! A lógica de interceção VIP no Servidor fará o resto.
             return 1;
         }
         else {
@@ -233,16 +232,13 @@ public class Skeleton {
     }
     
     public static void runRegistar(Socket sk, char simbolo) throws Exception {
-        // 1. Configurar os streams de comunicação
         BufferedReader is = new BufferedReader(new InputStreamReader(sk.getInputStream()));
         PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         
-        // 2. Ler a mensagem XML enviada pelo Stub (<metodo><registar .../></metodo>)
-        // O getNext já faz a validação contra o metodos-srv.xsd!
+        // O getNext já faz a validação contra o metodos-srv.xsd
         Document x = getNext(is, sk); 
         
-        // 3. Extrair o elemento "registar" e os seus atributos
-        // Usamos o método auxiliar getMethod que já existe no teu Skeleton
+        // Extrair o elemento "registar" e os seus atributos
         Element reg = getMethod(x, "registar");
         
         String nick  = reg.getAttribute("nickname");
@@ -256,14 +252,12 @@ public class Skeleton {
         String birthdate = reg.getAttribute("birthdate");
         String cor = reg.getAttribute("cor");
 
-        // 4. Lógica de Negócio: Criar o utilizador no users.xml
         // O método 'register' que fizemos no User.java trata de tudo e lança 
         // exceção se o nick já existir.
         User jg = User.register(nick, senha, firstNames, lastNames, email, gender, birthdate, foto, nac, cor);
         
         System.out.println("   Novo Jogador Registado: " + nick + " com o símbolo '" + simbolo + "'");
 
-        // 5. Preparar a Resposta (Seguindo o padrão do runIniciar)
         // Isto converte o objeto User para o XML <jogador simbolo='X' .../>
         Document d = XMLDoc.parseString(jg.toXMLString(simbolo)); 
         Node jogadorNode = d.getElementsByTagName("jogador").item(0);
@@ -274,7 +268,7 @@ public class Skeleton {
         // Anexamos o jogador dentro da tag <registar> para confirmar o sucesso
         reg.appendChild(cloneElement);
         
-        // 6. Enviar o XML final de volta para o Stub
+        // Enviar o XML final de volta para o Stub
         String msgResposta = XMLDoc.documentToString(x);
         printAndLog(os, sk, msgResposta);
     }
@@ -284,11 +278,11 @@ public class Skeleton {
         BufferedReader is = new BufferedReader(new InputStreamReader(sk.getInputStream()));
         PrintWriter os = new PrintWriter(sk.getOutputStream(), true);
         
-        // 1. Receber e validar a mensagem XML
+        // Receber e validar a mensagem XML
         Document x = getNext(is, sk); 
         Element req = (Element) x.getElementsByTagName("atualizar_perfil").item(0);
         
-        // 2. Extrair os dados
+        // Extrair os dados
         String nick = req.getAttribute("nickname");
         String novaFoto = req.getAttribute("foto");
         String cor = optionalAttribute(req, "cor");
@@ -299,7 +293,7 @@ public class Skeleton {
         String birthdate = optionalAttribute(req, "birthdate");
         String nationality = optionalAttribute(req, "nationality");
 
-        // 3. Usar o método nativo do professor para atualizar o ficheiro!
+        // Usar o método nativo do professor para atualizar o ficheiro
         // Assumindo que o método retorna um boolean de sucesso
         boolean sucesso = User._updatePerfil(nick, firstNames, lastNames, email, gender, birthdate, nationality,
                 novaFoto, cor);

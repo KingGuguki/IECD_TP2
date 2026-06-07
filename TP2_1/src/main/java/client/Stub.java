@@ -552,7 +552,7 @@ public class Stub implements AutoCloseable {
 				throw new Exception("Ligação ao servidor cancelada remotamente!");
 			}
 			
-			d = XMLDoc.parseString(resposta);  // consome a linha!
+			d = XMLDoc.parseString(resposta);  // consome a linha
 			validXSD(d);
 
 			NodeList obter = d.getElementsByTagName("obter");
@@ -563,9 +563,9 @@ public class Stub implements AutoCloseable {
 			n = d.getElementsByTagName("jogar");
 			if (n.getLength() > 0) 
 			{
-				break; // Resposta correta recebida!
+				break; // Resposta correta recebida
 			}
-			// Se for um <obter>, ignoramos e tentamos ler a próxima linha!
+			// Se for um <obter>, ignoramos e tentamos ler a próxima linha
 		}
 
 		return (Element) n.item(0).getFirstChild();
